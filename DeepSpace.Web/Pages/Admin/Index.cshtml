@@ -1,0 +1,45 @@
+@page "/admin"
+@model DeepSpace.Web.Pages.Admin.IndexModel
+@{
+    ViewData["Title"] = "Panel administracyjny";
+}
+
+<div class="admin-container">
+    <div class="admin-header">
+        <h1>Panel administracyjny</h1>
+        <a href="/admin/logout" class="btn btn-secondary">Wyloguj</a>
+    </div>
+
+    <div class="admin-menu">
+        <a href="/admin/articles" class="admin-card">
+            <div class="admin-card-icon">📝</div>
+            <h2>Artykuły</h2>
+            <p>Dodawaj, edytuj i zarządzaj artykułami</p>
+        </a>
+
+        <a href="/admin/categories" class="admin-card">
+            <div class="admin-card-icon">📂</div>
+            <h2>Kategorie</h2>
+            <p>Zarządzaj kategoriami artykułów</p>
+        </a>
+
+        <a href="/admin/tags" class="admin-card">
+            <div class="admin-card-icon">🏷️</div>
+            <h2>Tagi</h2>
+            <p>Zarządzaj tagami</p>
+        </a>
+
+        <a href="/" target="_blank" class="admin-card">
+            <div class="admin-card-icon">🌐</div>
+            <h2>Zobacz stronę</h2>
+            <p>Otwórz stronę publiczną w nowej karcie</p>
+        </a>
+    </div>
+
+    <div class="admin-stats">
+        <h3>Szybki dostęp</h3>
+        <div class="quick-actions">
+            <a href="/admin/articles" class="btn btn-primary">+ Nowy artykuł</a>
+        </div>
+    </div>
+</div>

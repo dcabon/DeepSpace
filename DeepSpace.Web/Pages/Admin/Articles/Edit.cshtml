@@ -1,0 +1,62 @@
+@page "/admin/articles/edit/{id:int}"
+@model DeepSpace.Web.Pages.Admin.Articles.EditModel
+@{
+    ViewData["Title"] = "Edytuj artykuł — Admin";
+}
+
+<div class="admin-container">
+    <h1>Edytuj artykuł</h1>
+
+    <form method="post" class="admin-form">
+        <input type="hidden" asp-for="Article.Id" />
+        
+        <div class="form-group">
+            <label for="Title">Tytuł</label>
+            <input type="text" id="Title" asp-for="Article.Title" required />
+        </div>
+
+        <div class="form-group">
+            <label for="Summary">Streszczenie</label>
+            <textarea id="Summary" asp-for="Article.Summary" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="Content">Treść (HTML)</label>
+            <textarea id="Content" asp-for="Article.Content" rows="15"></textarea>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="CategoryId">Kategoria</label>
+                <select id="CategoryId" asp-for="Article.CategoryId" asp-items="Model.Categories"></select>
+            </div>
+
+            <div class="form-group">
+                <label for="SourceName">Nazwa źródła</label>
+                <input type="text" id="SourceName" asp-for="Article.SourceName" placeholder="np. NASA" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="SourceUrl">URL źródła</label>
+            <input type="url" id="SourceUrl" asp-for="Article.SourceUrl" placeholder="https://..." />
+        </div>
+
+        <div class="form-group">
+            <label for="ImageUrl">URL obrazka</label>
+            <input type="text" id="ImageUrl" asp-for="Article.ImageUrl" placeholder="/images/..." />
+        </div>
+
+        <div class="form-group checkbox">
+            <label>
+                <input type="checkbox" asp-for="Article.IsPublished" />
+                Opublikowany
+            </label>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Zapisz zmiany</button>
+            <a href="/admin/articles" class="btn btn-secondary">Anuluj</a>
+        </div>
+    </form>
+</div>

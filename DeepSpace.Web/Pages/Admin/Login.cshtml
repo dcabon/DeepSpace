@@ -1,0 +1,43 @@
+@page "/admin/login"
+@model DeepSpace.Web.Pages.Admin.LoginModel
+@{
+    ViewData["Title"] = "Logowanie — Admin";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+<div class="login-page">
+    <div class="login-box">
+        <h1>Deep Space</h1>
+        <p class="subtitle">Panel administracyjny</p>
+
+        @if (!string.IsNullOrEmpty(Model.Error))
+        {
+            <p class="error-message">@Model.Error</p>
+        }
+
+        <form method="post">
+            <div class="form-group">
+                <label for="Username">Użytkownik</label>
+                <input type="text" id="Username" asp-for="Username" required autofocus />
+            </div>
+
+            <div class="form-group">
+                <label for="Password">Hasło</label>
+                <input type="password" id="Password" asp-for="Password" required />
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">Zaloguj się</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

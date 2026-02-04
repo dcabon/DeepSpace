@@ -1,0 +1,191 @@
+@page "/admin/categories"
+@model DeepSpace.Web.Pages.Admin.Categories.IndexModel
+@{
+    ViewData["Title"] = "Kategorie — Admin";
+}
+
+<div class="admin-container">
+    <div class="admin-header">
+        <h1>Kategorie</h1>
+        <button class="btn btn-primary" onclick="openCreateModal()">+ Nowa kategoria</button>
+    </div>
+
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Nazwa</th>
+                <th>Slug</th>
+                <th>Opis</th>
+                <th>Artykuły</th>
+                <th>Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var category in Model.Categories)
+            {
+                <tr>
+                    <td>@category.Name</td>
+                    <td><code>@category.Slug</code></td>
+                    <td>@(category.Description ?? "—")</td>
+                    <td>@category.Articles.Count</td>
+                    <td class="actions">
+                        <button class="btn-link" onclick="openEditModal(@category.Id)">Edytuj</button>
+                        <button class="btn-link delete" onclick="openDeleteModal(@category.Id, '@category.Name.Replace("'", "\\'")')">Usuń</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="back-link">
+        <a href="/admin">← Wróć do panelu</a>
+    </div>
+</div>
+
+<!-- Modal Create/Edit -->
+<div id="categoryModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">Nowa kategoria</h2>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <form id="categoryForm" class="admin-form">
+            <input type="hidden" id="categoryId" name="category.Id" value="0" />
+
+            <div class="form-group">
+                <label for="Name">Nazwa</label>
+                <input type="text" id="Name" name="category.Name" required />
+            </div>
+
+            <div class="form-group">
+                <label for="Description">Opis</label>
+                <textarea id="Description" name="category.Description" rows="3"></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Zapisz</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Anuluj</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Delete -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Usuń kategorię</h2>
+            <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <div class="delete-confirm">
+            <p>Czy na pewno chcesz usunąć kategorię:</p>
+            <h3 id="deleteTitle"></h3>
+            <p id="deleteError" class="error-message" style="display: none;"></p>
+            <div class="form-actions">
+                <button class="btn btn-danger" onclick="confirmDelete()">Tak, usuń</button>
+                <button class="btn btn-secondary" onclick="closeDeleteModal()">Anuluj</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let currentDeleteId = 0;
+
+    function openCreateModal() {
+        document.getElementById('modalTitle').textContent = 'Nowa kategoria';
+        document.getElementById('categoryForm').reset();
+        document.getElementById('categoryId').value = '0';
+        document.getElementById('categoryModal').classList.add('open');
+    }
+
+    async function openEditModal(id) {
+        document.getElementById('modalTitle').textContent = 'Edytuj kategorię';
+
+        const response = await fetch(`/admin/categories?handler=Edit&id=${id}`);
+        const category = await response.json();
+
+        document.getElementById('categoryId').value = category.id;
+        document.getElementById('Name').value = category.name || '';
+        document.getElementById('Description').value = category.description || '';
+
+        document.getElementById('categoryModal').classList.add('open');
+    }
+
+    function closeModal() {
+        document.getElementById('categoryModal').classList.remove('open');
+    }
+
+    function openDeleteModal(id, name) {
+        currentDeleteId = id;
+        document.getElementById('deleteTitle').textContent = name;
+        document.getElementById('deleteError').style.display = 'none';
+        document.getElementById('deleteModal').classList.add('open');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.remove('open');
+    }
+
+    document.getElementById('categoryForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(e.target);
+        const id = document.getElementById('categoryId').value;
+        const handler = id === '0' ? 'Create' : 'Edit';
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]');
+
+        const response = await fetch(`/admin/categories?handler=${handler}`, {
+            method: 'POST',
+            body: formData,
+            headers: token ? { 'RequestVerificationToken': token.value } : {}
+        });
+
+        if (response.ok) {
+            location.reload();
+        }
+    });
+
+    async function confirmDelete() {
+        const formData = new FormData();
+        formData.append('id', currentDeleteId);
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]');
+
+        const response = await fetch('/admin/categories?handler=Delete', {
+            method: 'POST',
+            body: formData,
+            headers: token ? { 'RequestVerificationToken': token.value } : {}
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            location.reload();
+        } else {
+            document.getElementById('deleteError').textContent = result.message;
+            document.getElementById('deleteError').style.display = 'block';
+        }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+            closeDeleteModal();
+        }
+    });
+
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+                closeDeleteModal();
+            }
+        });
+    });
+</script>
+}
+
+@Html.AntiForgeryToken()

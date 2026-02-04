@@ -1,0 +1,48 @@
+@page "/kategoria/{slug}"
+@model DeepSpace.Web.Pages.KategoriaModel
+@{
+    ViewData["Title"] = Model.Category.Name + " — Deep Space";
+}
+
+<div class="category-header">
+    <div class="container-narrow">
+        <h1>@Model.Category.Name</h1>
+        @if (!string.IsNullOrEmpty(Model.Category.Description))
+        {
+            <p class="description">@Model.Category.Description</p>
+        }
+        <p class="count">@Model.Articles.Count @(Model.Articles.Count == 1 ? "artykuł" : Model.Articles.Count < 5 ? "artykuły" : "artykułów")</p>
+    </div>
+</div>
+
+<div class="container-narrow">
+    @if (Model.Articles.Any())
+    {
+        <section class="articles">
+            @foreach (var article in Model.Articles)
+            {
+                <article class="article-card">
+                    <h3><a href="/artykul/@article.Slug">@article.Title</a></h3>
+                    <p class="summary">@article.Summary</p>
+                    <div class="meta">
+                        <time datetime="@article.PublishedAt.ToString("yyyy-MM-dd")">
+                            @article.PublishedAt.ToString("d MMMM yyyy")
+                        </time>
+                        @if (!string.IsNullOrEmpty(article.SourceName))
+                        {
+                            <span class="source">Źródło: @article.SourceName</span>
+                        }
+                    </div>
+                </article>
+            }
+        </section>
+    }
+    else
+    {
+        <p class="empty-state">Brak artykułów w tej kategorii.</p>
+    }
+
+    <div class="back-link">
+        <a href="/">← Wróć do strony głównej</a>
+    </div>
+</div>

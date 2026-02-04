@@ -1,0 +1,20 @@
+@page "/admin/articles/delete/{id:int}"
+@model DeepSpace.Web.Pages.Admin.Articles.DeleteModel
+@{
+    ViewData["Title"] = "Usuń artykuł — Admin";
+}
+
+<div class="admin-container">
+    <h1>Usuń artykuł</h1>
+
+    <div class="delete-confirm">
+        <p>Czy na pewno chcesz usunąć artykuł:</p>
+        <h2>@Model.Article.Title</h2>
+        <p class="meta">Kategoria: @Model.Article.Category.Name</p>
+
+        <form method="post" class="form-actions">
+            <button type="submit" class="btn btn-danger">Tak, usuń</button>
+            <a href="/admin/articles" class="btn btn-secondary">Anuluj</a>
+        </form>
+    </div>
+</div>

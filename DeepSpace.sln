@@ -1,8 +1,28 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeepSpace.Web", "DeepSpace.Web\DeepSpace.Web.csproj", "{2CC78431-7B1E-4812-B562-59D1A18DC926}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeepSpace.Core", "DeepSpace.Core\DeepSpace.Core.csproj", "{460B8337-0EC4-49FC-AB1B-FA228B4C8D91}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeepSpace.Infrastructure", "DeepSpace.Infrastructure\DeepSpace.Infrastructure.csproj", "{2DDBB327-D413-412E-84C4-B72C07B1A2C7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2CC78431-7B1E-4812-B562-59D1A18DC926}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CC78431-7B1E-4812-B562-59D1A18DC926}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CC78431-7B1E-4812-B562-59D1A18DC926}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CC78431-7B1E-4812-B562-59D1A18DC926}.Release|Any CPU.Build.0 = Release|Any CPU
+		{460B8337-0EC4-49FC-AB1B-FA228B4C8D91}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{460B8337-0EC4-49FC-AB1B-FA228B4C8D91}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{460B8337-0EC4-49FC-AB1B-FA228B4C8D91}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{460B8337-0EC4-49FC-AB1B-FA228B4C8D91}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2DDBB327-D413-412E-84C4-B72C07B1A2C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DDBB327-D413-412E-84C4-B72C07B1A2C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DDBB327-D413-412E-84C4-B72C07B1A2C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DDBB327-D413-412E-84C4-B72C07B1A2C7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

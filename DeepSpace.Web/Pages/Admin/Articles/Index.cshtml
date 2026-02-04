@@ -1,0 +1,301 @@
+@page "/admin/articles"
+@model DeepSpace.Web.Pages.Admin.Articles.IndexModel
+@{
+    ViewData["Title"] = "Artykuły — Admin";
+}
+
+<div class="admin-container">
+    <div class="admin-header">
+        <h1>Artykuły</h1>
+        <button class="btn btn-primary" onclick="openCreateModal()">+ Nowy artykuł</button>
+    </div>
+
+    <table class="admin-table">
+        <thead>
+        <tr>
+            <th>Tytuł</th>
+            <th>Kategoria</th>
+            <th>Tagi</th>
+            <th>Status</th>
+            <th>Data</th>
+            <th>Akcje</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var article in Model.Articles)
+        {
+            <tr data-id="@article.Id">
+                <td>@article.Title</td>
+                <td>@article.Category.Name</td>
+                <td>
+                    @if (article.ArticleTags.Any())
+                    {
+                        @string.Join(", ", article.ArticleTags.Select(at => at.Tag.Name))
+                    }
+                    else
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                </td>
+                <td>
+                    @if (article.IsPublished)
+                    {
+                        <span class="status published">Opublikowany</span>
+                    }
+                    else
+                    {
+                        <span class="status draft">Szkic</span>
+                    }
+                </td>
+                <td>@article.CreatedAt.ToString("dd.MM.yyyy")</td>
+                <td class="actions">
+                    <button class="btn-link" onclick="openEditModal(@article.Id)">Edytuj</button>
+                    <button class="btn-link delete" onclick="openDeleteModal(@article.Id, '@article.Title.Replace("'", "\\'")')">Usuń</button>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    
+    <div class="back-link">
+        <a href="/admin">← Wróć do panelu</a>
+    </div>
+</div>
+
+<!-- Modal Create/Edit -->
+<div id="articleModal" class="modal">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h2 id="modalTitle">Nowy artykuł</h2>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <form id="articleForm" class="admin-form">
+            <input type="hidden" id="articleId" name="article.Id" value="0" />
+            
+            <div class="form-group">
+                <label for="Title">Tytuł</label>
+                <input type="text" id="Title" name="article.Title" required />
+            </div>
+
+            <div class="form-group">
+                <label for="Summary">Streszczenie</label>
+                <textarea id="Summary" name="article.Summary" rows="3"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Treść</label>
+                <div id="editor"></div>
+                <input type="hidden" id="Content" name="article.Content" />
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="CategoryId">Kategoria</label>
+                    <select id="CategoryId" name="article.CategoryId" asp-items="Model.Categories"></select>
+                </div>
+
+                <div class="form-group">
+                    <label for="SourceName">Nazwa źródła</label>
+                    <input type="text" id="SourceName" name="article.SourceName" placeholder="np. NASA" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="SourceUrl">URL źródła</label>
+                <input type="url" id="SourceUrl" name="article.SourceUrl" placeholder="https://..." />
+            </div>
+
+            <div class="form-group">
+                <label for="ImageUrl">URL obrazka</label>
+                <input type="text" id="ImageUrl" name="article.ImageUrl" placeholder="/images/..." />
+            </div>
+            
+            <div class="form-group">
+                <label for="Tags">Tagi (oddzielone przecinkami)</label>
+                <input type="text" id="Tags" name="tags" placeholder="np. NASA, Mars, James Webb" />
+                <small class="form-hint">Nowe tagi zostaną utworzone automatycznie</small>
+            </div>
+
+            <div class="form-group checkbox">
+                <label>
+                    <input type="checkbox" id="IsPublished" name="article.IsPublished" value="true" />
+                    Opublikowany
+                </label>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Zapisz</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Anuluj</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Delete -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Usuń artykuł</h2>
+            <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <div class="delete-confirm">
+            <p>Czy na pewno chcesz usunąć artykuł:</p>
+            <h3 id="deleteTitle"></h3>
+            <div class="form-actions">
+                <button class="btn btn-danger" onclick="confirmDelete()">Tak, usuń</button>
+                <button class="btn btn-secondary" onclick="closeDeleteModal()">Anuluj</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+
+@section Scripts {
+<script>
+    let currentDeleteId = 0;
+    let quill = null;
+
+    function initEditor() {
+        if (quill) return;
+        
+        quill = new Quill('#editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'align': [] }],
+                    ['link', 'image'],
+                    ['clean']
+                ]
+            }
+        });
+    }
+
+    function destroyEditor() {
+        if (quill) {
+            quill = null;
+            document.getElementById('editor').innerHTML = '';
+        }
+    }
+
+    function openCreateModal() {
+        document.getElementById('modalTitle').textContent = 'Nowy artykuł';
+        document.getElementById('articleForm').reset();
+        document.getElementById('articleId').value = '0';
+        document.getElementById('Tags').value = '';
+        document.getElementById('articleModal').classList.add('open');
+        
+        setTimeout(() => {
+            destroyEditor();
+            document.getElementById('editor').innerHTML = '';
+            initEditor();
+        }, 50);
+    }
+
+    async function openEditModal(id) {
+        document.getElementById('modalTitle').textContent = 'Edytuj artykuł';
+
+        const response = await fetch(`/admin/articles?handler=Edit&id=${id}`);
+        const article = await response.json();
+
+        document.getElementById('articleId').value = article.id;
+        document.getElementById('Title').value = article.title || '';
+        document.getElementById('Summary').value = article.summary || '';
+        document.getElementById('CategoryId').value = article.categoryId;
+        document.getElementById('SourceName').value = article.sourceName || '';
+        document.getElementById('SourceUrl').value = article.sourceUrl || '';
+        document.getElementById('ImageUrl').value = article.imageUrl || '';
+        document.getElementById('Tags').value = article.tags || '';
+        document.getElementById('IsPublished').checked = article.isPublished;
+
+        document.getElementById('articleModal').classList.add('open');
+        
+        setTimeout(() => {
+            destroyEditor();
+            document.getElementById('editor').innerHTML = '';
+            initEditor();
+            if (article.content) {
+                quill.root.innerHTML = article.content;
+            }
+        }, 50);
+    }
+
+    function closeModal() {
+        destroyEditor();
+        document.getElementById('articleModal').classList.remove('open');
+    }
+
+    function openDeleteModal(id, title) {
+        currentDeleteId = id;
+        document.getElementById('deleteTitle').textContent = title;
+        document.getElementById('deleteModal').classList.add('open');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.remove('open');
+    }
+
+    document.getElementById('articleForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        document.getElementById('Content').value = quill ? quill.root.innerHTML : '';
+
+        const formData = new FormData(e.target);
+        const id = document.getElementById('articleId').value;
+        const handler = id === '0' ? 'Create' : 'Edit';
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]');
+
+        const response = await fetch(`/admin/articles?handler=${handler}`, {
+            method: 'POST',
+            body: formData,
+            headers: token ? { 'RequestVerificationToken': token.value } : {}
+        });
+
+        if (response.ok) {
+            location.reload();
+        }
+    });
+
+    async function confirmDelete() {
+        const formData = new FormData();
+        formData.append('id', currentDeleteId);
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]');
+
+        const response = await fetch('/admin/articles?handler=Delete', {
+            method: 'POST',
+            body: formData,
+            headers: token ? { 'RequestVerificationToken': token.value } : {}
+        });
+
+        if (response.ok) {
+            location.reload();
+        }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+            closeDeleteModal();
+        }
+    });
+
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+                closeDeleteModal();
+            }
+        });
+    });
+</script>
+}
+
+
+<!-- Anti-forgery token -->
+@Html.AntiForgeryToken()

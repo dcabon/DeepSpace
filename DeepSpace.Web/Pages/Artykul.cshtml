@@ -1,0 +1,81 @@
+@page "/artykul/{slug}"
+@model DeepSpace.Web.Pages.ArtykulModel
+@{
+    ViewData["Title"] = Model.Article!.Title + " — Deep Space";
+    var heroImage = !string.IsNullOrEmpty(Model.Article.ImageUrl) 
+        ? Model.Article.ImageUrl 
+        : "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1920&q=80";
+}
+
+<div class="article-hero">
+    <div class="article-hero-bg" style="background-image: url('@heroImage')"></div>
+    <div class="article-hero-overlay"></div>
+    <div class="article-hero-content">
+        <a href="/kategoria/@Model.Article.Category.Slug" class="category-badge">@Model.Article.Category.Name</a>
+        <h1>@Model.Article.Title</h1>
+        <div class="article-meta">
+            <time datetime="@Model.Article.PublishedAt.ToString("yyyy-MM-dd")">
+                @Model.Article.PublishedAt.ToString("d MMMM yyyy")
+            </time>
+            @if (!string.IsNullOrEmpty(Model.Article.SourceName))
+            {
+                <span> • Źródło:
+                    @if (!string.IsNullOrEmpty(Model.Article.SourceUrl))
+                    {
+                        <a href="@Model.Article.SourceUrl" target="_blank" rel="noopener">@Model.Article.SourceName</a>
+                    }
+                    else
+                    {
+                        @Model.Article.SourceName
+                    }
+                </span>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="container-narrow">
+    <article class="article-content fade-in">
+        @Html.Raw(Model.Article.Content)
+    </article>
+
+    @if (Model.Tags.Any())
+    {
+        <div class="tags fade-in">
+            <span class="tags-label">Tagi:</span>
+            @foreach (var tag in Model.Tags)
+            {
+                <a href="/tag/@tag.Slug" class="tag">@tag.Name</a>
+            }
+        </div>
+    }
+
+    <div class="back-link">
+        <a href="/">← Wróć do strony głównej</a>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Parallax for article hero
+    window.addEventListener('scroll', () => {
+        const scrolled = window.pageYOffset;
+        const heroBg = document.querySelector('.article-hero-bg');
+        if (heroBg && scrolled < window.innerHeight) {
+            heroBg.style.transform = `translateY(${scrolled * 0.4}px)`;
+        }
+    });
+
+    // Fade in
+    const fadeElements = document.querySelectorAll('.fade-in');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, { threshold: 0.1 });
+
+    fadeElements.forEach(el => observer.observe(el));
+</script>
+}
