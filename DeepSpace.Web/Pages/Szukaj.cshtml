@@ -1,51 +1,56 @@
 @page "/szukaj"
 @model DeepSpace.Web.Pages.SzukajModel
 @{
-    ViewData["Title"] = string.IsNullOrEmpty(Model.Query) ? "Szukaj — Deep Space" : $"Wyniki dla \"{Model.Query}\" — Deep Space";
+    ViewData["Title"] = "Szukaj — Deep Space";
 }
 
-<div class="search-header">
-    <div class="container-narrow">
-        <h1>Szukaj</h1>
-        <form method="get" class="search-form">
-            <input type="text" name="q" value="@Model.Query" placeholder="Wpisz frazę..." autofocus />
-            <button type="submit" class="btn btn-primary">Szukaj</button>
-        </form>
-    </div>
+<div class="page-header">
+    <h1>Szukaj</h1>
+    <form method="get" class="search-form">
+        <input type="text" name="q" value="@Model.Query" placeholder="Wpisz frazę..." autofocus />
+        <button type="submit">Szukaj</button>
+    </form>
 </div>
 
-<div class="container-narrow">
+<div class="editorial-container">
     @if (!string.IsNullOrEmpty(Model.Query))
     {
-        <p class="results-count">
-            Znaleziono @Model.Articles.Count @(Model.Articles.Count == 1 ? "wynik" : Model.Articles.Count < 5 ? "wyniki" : "wyników")
+        <p class="text-muted mb-2">
+            @if (Model.Articles.Any())
+            {
+                <span>Znaleziono @Model.Articles.Count wyników dla „@Model.Query"</span>
+            }
+            else
+            {
+                <span>Brak wyników dla „@Model.Query"</span>
+            }
         </p>
-
-        @if (Model.Articles.Any())
-        {
-            <section class="articles">
-                @foreach (var article in Model.Articles)
-                {
-                    <article class="article-card">
-                        <span class="category-badge">@article.Category.Name</span>
-                        <h3><a href="/artykul/@article.Slug">@article.Title</a></h3>
-                        <p class="summary">@article.Summary</p>
-                        <div class="meta">
-                            <time datetime="@article.PublishedAt.ToString("yyyy-MM-dd")">
-                                @article.PublishedAt.ToString("d MMMM yyyy")
-                            </time>
-                        </div>
-                    </article>
-                }
-            </section>
-        }
-        else
-        {
-            <p class="empty-state">Nie znaleziono artykułów pasujących do zapytania.</p>
-        }
     }
 
-    <div class="back-link">
-        <a href="/">← Wróć do strony głównej</a>
-    </div>
+    @if (Model.Articles.Any())
+    {
+        <div class="articles-grid">
+            @foreach (var article in Model.Articles)
+            {
+                <article class="article-card">
+                    <a href="/artykul/@article.Slug" class="article-link">
+                        @if (!string.IsNullOrEmpty(article.ImageUrl))
+                        {
+                            <div class="article-image-wrapper">
+                                <img src="@article.ImageUrl" alt="@article.Title" class="article-image" />
+                            </div>
+                        }
+                        <div class="article-content">
+                            <span class="article-category">@article.Category.Name</span>
+                            <h3 class="article-title">@article.Title</h3>
+                            <p class="article-summary">@article.Summary</p>
+                            <div class="article-meta">
+                                <time>@article.PublishedAt.ToString("d MMMM yyyy")</time>
+                            </div>
+                        </div>
+                    </a>
+                </article>
+            }
+        </div>
+    }
 </div>

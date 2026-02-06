@@ -1,48 +1,47 @@
 @page "/kategoria/{slug}"
 @model DeepSpace.Web.Pages.KategoriaModel
 @{
-    ViewData["Title"] = Model.Category.Name + " — Deep Space";
+    ViewData["Title"] = Model.Category!.Name + " — Deep Space";
 }
 
-<div class="category-header">
-    <div class="container-narrow">
-        <h1>@Model.Category.Name</h1>
-        @if (!string.IsNullOrEmpty(Model.Category.Description))
-        {
-            <p class="description">@Model.Category.Description</p>
-        }
-        <p class="count">@Model.Articles.Count @(Model.Articles.Count == 1 ? "artykuł" : Model.Articles.Count < 5 ? "artykuły" : "artykułów")</p>
-    </div>
+<div class="page-header">
+    <h1>@Model.Category.Name</h1>
+    @if (!string.IsNullOrEmpty(Model.Category.Description))
+    {
+        <p>@Model.Category.Description</p>
+    }
+    <p class="text-muted">@Model.Articles.Count artykułów</p>
 </div>
 
-<div class="container-narrow">
+<div class="editorial-container">
     @if (Model.Articles.Any())
     {
-        <section class="articles">
+        <div class="articles-grid">
             @foreach (var article in Model.Articles)
             {
                 <article class="article-card">
-                    <h3><a href="/artykul/@article.Slug">@article.Title</a></h3>
-                    <p class="summary">@article.Summary</p>
-                    <div class="meta">
-                        <time datetime="@article.PublishedAt.ToString("yyyy-MM-dd")">
-                            @article.PublishedAt.ToString("d MMMM yyyy")
-                        </time>
-                        @if (!string.IsNullOrEmpty(article.SourceName))
+                    <a href="/artykul/@article.Slug" class="article-link">
+                        @if (!string.IsNullOrEmpty(article.ImageUrl))
                         {
-                            <span class="source">Źródło: @article.SourceName</span>
+                            <div class="article-image-wrapper">
+                                <img src="@article.ImageUrl" alt="@article.Title" class="article-image" />
+                            </div>
                         }
-                    </div>
+                        <div class="article-content">
+                            <span class="article-category">@article.Category.Name</span>
+                            <h3 class="article-title">@article.Title</h3>
+                            <p class="article-summary">@article.Summary</p>
+                            <div class="article-meta">
+                                <time>@article.PublishedAt.ToString("d MMMM yyyy")</time>
+                            </div>
+                        </div>
+                    </a>
                 </article>
             }
-        </section>
+        </div>
     }
     else
     {
-        <p class="empty-state">Brak artykułów w tej kategorii.</p>
+        <p class="text-center text-muted mt-2">Brak artykułów w tej kategorii.</p>
     }
-
-    <div class="back-link">
-        <a href="/">← Wróć do strony głównej</a>
-    </div>
 </div>

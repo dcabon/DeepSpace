@@ -1,134 +1,338 @@
-﻿@page
+@page
+@using DeepSpace.Core.Entities
 @model DeepSpace.Web.Pages.IndexModel
 @{
-    ViewData["Title"] = "Deep Space — Rzetelne wiadomości z kosmosu";
+    ViewData["Title"] = "Deep Space — Astronomia i fizyka bez clickbaitu";
 }
 
-<div class="hero">
-    <div class="hero-bg"></div>
-    <div class="stars" id="stars"></div>
-    <div class="hero-content">
-        <h1>Deep Space</h1>
-        <p class="tagline">Astronomia i fizyka bez clickbaitu. Tylko potwierdzone fakty.</p>
-    </div>
-    <div class="hero-scroll">
-        Przewiń w dół
-        <span>↓</span>
+<div class="masthead">
+    <div class="masthead-content">
+        <h1 class="masthead-title">Deep Space</h1>
+        <p class="masthead-tagline">Astronomia i fizyka bez clickbaitu. Tylko potwierdzone fakty.</p>
+        <div class="masthead-date">@DateTime.Now.ToString("dddd, d MMMM yyyy")</div>
     </div>
 </div>
 
-<div class="container">
-    <div class="main-content">
-        <div class="section-header">
-            <h2>Najnowsze artykuły</h2>
-        </div>
-
-        <section class="articles">
-            @foreach (var article in Model.Articles)
+@if (Model.FeaturedArticle != null)
+{
+    var featured = Model.FeaturedArticle;
+    <a href="/artykul/@featured.Slug" class="featured-hero">
+        <div class="featured-hero-image">
+            @if (!string.IsNullOrEmpty(featured.ImageUrl))
             {
-                <article class="article-card fade-in">
-                    @if (!string.IsNullOrEmpty(article.ImageUrl))
-                    {
-                        <div class="article-card-image-wrapper">
-                            <img src="@article.ImageUrl" alt="@article.Title" class="article-card-image" />
-                        </div>
-                    }
-                    <div class="article-card-body">
-                        <span class="category-badge">@article.Category.Name</span>
-                        <h3><a href="/artykul/@article.Slug">@article.Title</a></h3>
-                        <p class="summary">@article.Summary</p>
-                        <div class="meta">
-                            <time datetime="@article.PublishedAt.ToString("yyyy-MM-dd")">
-                                @article.PublishedAt.ToString("d MMMM yyyy")
-                            </time>
-                            @if (!string.IsNullOrEmpty(article.SourceName))
-                            {
-                                <span class="source">@article.SourceName</span>
-                            }
-                        </div>
-                    </div>
-                </article>
+                <img src="@featured.ImageUrl" alt="@featured.Title" />
             }
-        </section>
-
-        @if (Model.TotalPages > 1)
-        {
-            <nav class="pagination">
-                @if (Model.CurrentPage > 1)
-                {
-                    <a href="/?page=@(Model.CurrentPage - 1)" class="page-link">← Nowsze</a>
-                }
-
-                <span class="page-info">Strona @Model.CurrentPage z @Model.TotalPages</span>
-
-                @if (Model.CurrentPage < Model.TotalPages)
-                {
-                    <a href="/?page=@(Model.CurrentPage + 1)" class="page-link">Starsze →</a>
-                }
-            </nav>
-        }
-    </div>
-
-    <aside class="sidebar">
-        <div class="sidebar-card">
-            <h3>Kategorie</h3>
-            <ul class="category-list">
-                @foreach (var category in Model.Categories)
-                {
-                    <li>
-                        <a href="/kategoria/@category.Slug">
-                            @category.Name
-                            <span class="count">@category.Articles.Count(a => a.IsPublished)</span>
-                        </a>
-                    </li>
-                }
-            </ul>
+            <div class="featured-hero-overlay"></div>
         </div>
-
-        <div class="sidebar-card sidebar-search">
-            <h3>Szukaj</h3>
-            <form action="/szukaj" method="get" class="search-form-small">
-                <input type="text" name="q" placeholder="Wpisz frazę..." />
-                <button type="submit">→</button>
-            </form>
+        <div class="featured-hero-container">
+            <div class="featured-hero-content">
+                <span class="article-category">@featured.Category.Name</span>
+                <h2 class="featured-hero-title">@featured.Title</h2>
+                <p class="featured-hero-summary">@featured.Summary</p>
+                <div class="article-meta">
+                    <time>@featured.PublishedAt.ToString("d MMMM yyyy")</time>
+                    @if (!string.IsNullOrEmpty(featured.SourceName))
+                    {
+                        <span class="meta-separator">·</span>
+                        <span>@featured.SourceName</span>
+                    }
+                </div>
+            </div>
         </div>
-    </aside>
-</div>
+    </a>
+}
 
-@section Scripts {
-<script>
-    // Generate stars
-    const starsContainer = document.getElementById('stars');
-    for (let i = 0; i < 100; i++) {
-        const star = document.createElement('div');
-        star.className = 'star';
-        star.style.left = Math.random() * 100 + '%';
-        star.style.top = Math.random() * 100 + '%';
-        star.style.animationDelay = Math.random() * 3 + 's';
-        star.style.width = Math.random() * 2 + 1 + 'px';
-        star.style.height = star.style.width;
-        starsContainer.appendChild(star);
+<div class="homepage-content @(Model.FeaturedQuiz != null ? "with-sidebar" : "")">
+    @if (Model.FeaturedQuiz != null)
+    {
+        <aside class="homepage-sidebar">
+            <a href="/quiz/@Model.FeaturedQuiz.Slug" class="sidebar-quiz-card">
+                <div class="sidebar-quiz-image">
+                    <img src="@(Model.FeaturedQuiz.ImageUrl ?? "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=600")" alt="@Model.FeaturedQuiz.Title" />
+                    <div class="sidebar-quiz-overlay"></div>
+                </div>
+                <div class="sidebar-quiz-content">
+                    <span class="sidebar-label">Quiz dnia</span>
+                    <h3>@Model.FeaturedQuiz.Title</h3>
+                    @if (!string.IsNullOrEmpty(Model.FeaturedQuiz.Description))
+                    {
+                        <p>@Model.FeaturedQuiz.Description</p>
+                    }
+                    <div class="sidebar-quiz-meta">
+                        <span class="sidebar-quiz-badge">@Model.FeaturedQuiz.Questions.Count pytań</span>
+                        <span class="sidebar-quiz-cta">Rozwiąż quiz →</span>
+                    </div>
+                </div>
+            </a>
+        </aside>
     }
 
-    // Parallax effect
-    window.addEventListener('scroll', () => {
-        const scrolled = window.pageYOffset;
-        const heroBg = document.querySelector('.hero-bg');
-        if (heroBg) {
-            heroBg.style.transform = `translateY(${scrolled * 0.5}px)`;
+    <div class="homepage-main">
+        @if (Model.LatestArticles.Any())
+        {
+            <section class="articles-section">
+                <div class="section-header">
+                    <h2>Najnowsze</h2>
+                    <div class="section-line"></div>
+                </div>
+                
+                @{
+                    var latestArticles = Model.LatestArticles;
+                    var index = 0;
+                    while (index < latestArticles.Count)
+                    {
+                        var remaining = latestArticles.Count - index;
+                        
+                        if (remaining == 1)
+                        {
+                            var article = latestArticles[index];
+                            <a href="/artykul/@article.Slug" class="article-solo">
+                                <img src="@(article.ImageUrl ?? "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1200")" alt="@article.Title" />
+                                <div class="article-solo-overlay"></div>
+                                <div class="article-solo-content">
+                                    <span class="article-category">@article.Category.Name</span>
+                                    <h3>@article.Title</h3>
+                                    <p>@article.Summary</p>
+                                    <div class="article-meta">
+                                        <time>@article.PublishedAt.ToString("d MMMM yyyy")</time>
+                                    </div>
+                                </div>
+                            </a>
+                            index += 1;
+                        }
+                        else if (remaining == 2)
+                        {
+                            var first = latestArticles[index];
+                            var second = latestArticles[index + 1];
+                            <div class="article-duo">
+                                <a href="/artykul/@first.Slug" class="article-duo-large">
+                                    <div class="article-duo-large-image">
+                                        <img src="@(first.ImageUrl ?? "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1200")" alt="@first.Title" />
+                                    </div>
+                                    <div class="article-duo-large-content">
+                                        <span class="article-category">@first.Category.Name</span>
+                                        <h3>@first.Title</h3>
+                                        <p>@first.Summary</p>
+                                        <div class="article-meta">
+                                            <time>@first.PublishedAt.ToString("d MMMM yyyy")</time>
+                                        </div>
+                                    </div>
+                                </a>
+                                <a href="/artykul/@second.Slug" class="article-duo-small">
+                                    <img src="@(second.ImageUrl ?? "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800")" alt="@second.Title" />
+                                    <div class="article-duo-small-overlay"></div>
+                                    <div class="article-duo-small-content">
+                                        <span class="article-category">@second.Category.Name</span>
+                                        <h3>@second.Title</h3>
+                                        <div class="article-meta">
+                                            <time>@second.PublishedAt.ToString("d MMMM yyyy")</time>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            index += 2;
+                        }
+                        else
+                        {
+                            var a1 = latestArticles[index];
+                            var a2 = latestArticles[index + 1];
+                            var a3 = latestArticles[index + 2];
+                            <div class="articles-grid">
+                                <article class="article-card">
+                                    <a href="/artykul/@a1.Slug" class="article-link">
+                                        @if (!string.IsNullOrEmpty(a1.ImageUrl))
+                                        {
+                                            <div class="article-image-wrapper">
+                                                <img src="@a1.ImageUrl" alt="@a1.Title" class="article-image" />
+                                            </div>
+                                        }
+                                        <div class="article-content">
+                                            <span class="article-category">@a1.Category.Name</span>
+                                            <h3 class="article-title">@a1.Title</h3>
+                                            <p class="article-summary">@a1.Summary</p>
+                                            <div class="article-meta">
+                                                <time>@a1.PublishedAt.ToString("d MMMM yyyy")</time>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </article>
+                                <article class="article-card">
+                                    <a href="/artykul/@a2.Slug" class="article-link">
+                                        @if (!string.IsNullOrEmpty(a2.ImageUrl))
+                                        {
+                                            <div class="article-image-wrapper">
+                                                <img src="@a2.ImageUrl" alt="@a2.Title" class="article-image" />
+                                            </div>
+                                        }
+                                        <div class="article-content">
+                                            <span class="article-category">@a2.Category.Name</span>
+                                            <h3 class="article-title">@a2.Title</h3>
+                                            <p class="article-summary">@a2.Summary</p>
+                                            <div class="article-meta">
+                                                <time>@a2.PublishedAt.ToString("d MMMM yyyy")</time>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </article>
+                                <article class="article-card">
+                                    <a href="/artykul/@a3.Slug" class="article-link">
+                                        @if (!string.IsNullOrEmpty(a3.ImageUrl))
+                                        {
+                                            <div class="article-image-wrapper">
+                                                <img src="@a3.ImageUrl" alt="@a3.Title" class="article-image" />
+                                            </div>
+                                        }
+                                        <div class="article-content">
+                                            <span class="article-category">@a3.Category.Name</span>
+                                            <h3 class="article-title">@a3.Title</h3>
+                                            <p class="article-summary">@a3.Summary</p>
+                                            <div class="article-meta">
+                                                <time>@a3.PublishedAt.ToString("d MMMM yyyy")</time>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </article>
+                            </div>
+                            index += 3;
+                        }
+                    }
+                }
+            </section>
         }
-    });
 
-    // Fade in on scroll
-    const fadeElements = document.querySelectorAll('.fade-in');
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
-            }
-        });
-    }, { threshold: 0.1 });
-
-    fadeElements.forEach(el => observer.observe(el));
-</script>
-}
+        @foreach (var categoryData in Model.CategoriesWithArticles)
+        {
+            <section class="articles-section category-section">
+                <div class="section-header">
+                    <h2>@categoryData.Category.Name</h2>
+                    <div class="section-line"></div>
+                    <a href="/kategoria/@categoryData.Category.Slug" class="section-more">
+                        Więcej <span>→</span>
+                    </a>
+                </div>
+                
+                @{
+                    var catArticles = categoryData.Articles;
+                    var catIndex = 0;
+                    while (catIndex < catArticles.Count)
+                    {
+                        var remaining = catArticles.Count - catIndex;
+                        
+                        if (remaining == 1)
+                        {
+                            var article = catArticles[catIndex];
+                            <a href="/artykul/@article.Slug" class="article-solo">
+                                <img src="@(article.ImageUrl ?? "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1200")" alt="@article.Title" />
+                                <div class="article-solo-overlay"></div>
+                                <div class="article-solo-content">
+                                    <span class="article-category">@article.Category.Name</span>
+                                    <h3>@article.Title</h3>
+                                    <p>@article.Summary</p>
+                                    <div class="article-meta">
+                                        <time>@article.PublishedAt.ToString("d MMMM yyyy")</time>
+                                    </div>
+                                </div>
+                            </a>
+                            catIndex += 1;
+                        }
+                        else if (remaining == 2)
+                        {
+                            var first = catArticles[catIndex];
+                            var second = catArticles[catIndex + 1];
+                            <div class="article-duo">
+                                <a href="/artykul/@first.Slug" class="article-duo-large">
+                                    <div class="article-duo-large-image">
+                                        <img src="@(first.ImageUrl ?? "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1200")" alt="@first.Title" />
+                                    </div>
+                                    <div class="article-duo-large-content">
+                                        <span class="article-category">@first.Category.Name</span>
+                                        <h3>@first.Title</h3>
+                                        <p>@first.Summary</p>
+                                        <div class="article-meta">
+                                            <time>@first.PublishedAt.ToString("d MMMM yyyy")</time>
+                                        </div>
+                                    </div>
+                                </a>
+                                <a href="/artykul/@second.Slug" class="article-duo-small">
+                                    <img src="@(second.ImageUrl ?? "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800")" alt="@second.Title" />
+                                    <div class="article-duo-small-overlay"></div>
+                                    <div class="article-duo-small-content">
+                                        <span class="article-category">@second.Category.Name</span>
+                                        <h3>@second.Title</h3>
+                                        <div class="article-meta">
+                                            <time>@second.PublishedAt.ToString("d MMMM yyyy")</time>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            catIndex += 2;
+                        }
+                        else
+                        {
+                            var a1 = catArticles[catIndex];
+                            var a2 = catArticles[catIndex + 1];
+                            var a3 = catArticles[catIndex + 2];
+                            <div class="articles-grid">
+                                <article class="article-card">
+                                    <a href="/artykul/@a1.Slug" class="article-link">
+                                        @if (!string.IsNullOrEmpty(a1.ImageUrl))
+                                        {
+                                            <div class="article-image-wrapper">
+                                                <img src="@a1.ImageUrl" alt="@a1.Title" class="article-image" />
+                                            </div>
+                                        }
+                                        <div class="article-content">
+                                            <span class="article-category">@a1.Category.Name</span>
+                                            <h3 class="article-title">@a1.Title</h3>
+                                            <p class="article-summary">@a1.Summary</p>
+                                            <div class="article-meta">
+                                                <time>@a1.PublishedAt.ToString("d MMMM yyyy")</time>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </article>
+                                <article class="article-card">
+                                    <a href="/artykul/@a2.Slug" class="article-link">
+                                        @if (!string.IsNullOrEmpty(a2.ImageUrl))
+                                        {
+                                            <div class="article-image-wrapper">
+                                                <img src="@a2.ImageUrl" alt="@a2.Title" class="article-image" />
+                                            </div>
+                                        }
+                                        <div class="article-content">
+                                            <span class="article-category">@a2.Category.Name</span>
+                                            <h3 class="article-title">@a2.Title</h3>
+                                            <p class="article-summary">@a2.Summary</p>
+                                            <div class="article-meta">
+                                                <time>@a2.PublishedAt.ToString("d MMMM yyyy")</time>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </article>
+                                <article class="article-card">
+                                    <a href="/artykul/@a3.Slug" class="article-link">
+                                        @if (!string.IsNullOrEmpty(a3.ImageUrl))
+                                        {
+                                            <div class="article-image-wrapper">
+                                                <img src="@a3.ImageUrl" alt="@a3.Title" class="article-image" />
+                                            </div>
+                                        }
+                                        <div class="article-content">
+                                            <span class="article-category">@a3.Category.Name</span>
+                                            <h3 class="article-title">@a3.Title</h3>
+                                            <p class="article-summary">@a3.Summary</p>
+                                            <div class="article-meta">
+                                                <time>@a3.PublishedAt.ToString("d MMMM yyyy")</time>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </article>
+                            </div>
+                            catIndex += 3;
+                        }
+                    }
+                }
+            </section>
+        }
+    </div>
+</div>

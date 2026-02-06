@@ -1,43 +1,44 @@
 @page "/admin/login"
 @model DeepSpace.Web.Pages.Admin.LoginModel
 @{
-    ViewData["Title"] = "Logowanie — Admin";
+    ViewData["Title"] = "Logowanie";
     Layout = null;
 }
 
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="pl" data-theme="light">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"]</title>
+    <title>Logowanie — Deep Space</title>
     <link rel="stylesheet" href="~/css/site.css" />
 </head>
-<body>
-<div class="login-page">
-    <div class="login-box">
-        <h1>Deep Space</h1>
-        <p class="subtitle">Panel administracyjny</p>
-
-        @if (!string.IsNullOrEmpty(Model.Error))
-        {
-            <p class="error-message">@Model.Error</p>
-        }
-
-        <form method="post">
-            <div class="form-group">
-                <label for="Username">Użytkownik</label>
-                <input type="text" id="Username" asp-for="Username" required autofocus />
-            </div>
-
-            <div class="form-group">
-                <label for="Password">Hasło</label>
-                <input type="password" id="Password" asp-for="Password" required />
-            </div>
-
-            <button type="submit" class="btn btn-primary btn-full">Zaloguj się</button>
-        </form>
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+<div style="width: 100%; max-width: 400px; padding: 2rem;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="font-family: var(--font-serif); font-size: 2rem; margin-bottom: 0.5rem;">Deep Space</h1>
+        <p class="text-muted">Panel administracyjny</p>
     </div>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div style="background: #fee; border: 1px solid #fcc; padding: 1rem; margin-bottom: 1.5rem; color: #c00;">
+            @Model.ErrorMessage
+        </div>
+    }
+
+    <form method="post" class="admin-form">
+        @Html.AntiForgeryToken()
+        <div class="form-group">
+            <label for="username">Login</label>
+            <input type="text" id="username" name="username" required autofocus />
+        </div>
+        <div class="form-group">
+            <label for="password">Hasło</label>
+            <input type="password" id="password" name="password" required />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Zaloguj się</button>
+    </form>
 </div>
 </body>
 </html>

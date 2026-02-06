@@ -1,0 +1,10 @@
+@inject DeepSpace.Infrastructure.Data.AppDbContext Context
+
+@{
+    var categories = Context.Categories.OrderBy(c => c.Name).ToList();
+}
+
+@foreach (var category in categories)
+{
+    <a href="/kategoria/@category.Slug">@category.Name</a>
+}

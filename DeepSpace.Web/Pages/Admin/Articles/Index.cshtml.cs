@@ -3,8 +3,8 @@ using DeepSpace.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace DeepSpace.Web.Pages.Admin.Articles;
 
@@ -19,7 +19,7 @@ public class IndexModel : PageModel
     }
 
     public List<Article> Articles { get; set; } = new();
-    public SelectList Categories { get; set; } = null!;
+    public List<Category> Categories { get; set; } = new();
 
     public async Task OnGetAsync()
     {
@@ -28,13 +28,13 @@ public class IndexModel : PageModel
             .Include(a => a.ArticleTags)
             .ThenInclude(at => at.Tag)
             .Where(a => a.IsActive)
-            .OrderByDescending(a => a.CreatedAt)
+            .OrderByDescending(a => a.PublishedAt)
             .ToListAsync();
 
-        Categories = new SelectList(await _context.Categories.ToListAsync(), "Id", "Name");
+        Categories = await _context.Categories.OrderBy(c => c.Name).ToListAsync();
     }
 
-    public async Task<IActionResult> OnGetEditAsync(int id)
+    public async Task<IActionResult> OnGetArticleAsync(int id)
     {
         var article = await _context.Articles
             .Include(a => a.ArticleTags)
@@ -48,27 +48,38 @@ public class IndexModel : PageModel
 
         return new JsonResult(new
         {
-            article.Id,
-            article.Title,
-            article.Summary,
-            article.Content,
-            article.CategoryId,
-            article.SourceName,
-            article.SourceUrl,
-            article.ImageUrl,
-            article.IsPublished,
-            Tags = tags
+            id = article.Id,
+            title = article.Title,
+            summary = article.Summary,
+            content = article.Content,
+            categoryId = article.CategoryId,
+            tags = tags,
+            sourceName = article.SourceName,
+            sourceUrl = article.SourceUrl,
+            imageUrl = article.ImageUrl,
+            isPublished = article.IsPublished
         });
     }
 
-    public async Task<IActionResult> OnPostCreateAsync(Article article, string? tags)
+    public async Task<IActionResult> OnPostCreateAsync(string title, string summary, string content, 
+        int categoryId, string? tags, string? sourceName, string? sourceUrl, string? imageUrl, bool isPublished = false)
     {
-        article.Slug = GenerateSlug(article.Title);
-        article.CreatedAt = DateTime.UtcNow;
-        article.IsActive = true;
-
-        if (article.IsPublished)
-            article.PublishedAt = DateTime.UtcNow;
+        var article = new Article
+        {
+            Title = title,
+            Slug = GenerateSlug(title),
+            Summary = summary,
+            Content = content,
+            CategoryId = categoryId,
+            SourceName = sourceName,
+            SourceUrl = sourceUrl,
+            ImageUrl = imageUrl,
+            IsPublished = isPublished,
+            IsActive = true,
+            PublishedAt = isPublished ? DateTime.UtcNow : DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
 
         _context.Articles.Add(article);
         await _context.SaveChangesAsync();
@@ -78,30 +89,26 @@ public class IndexModel : PageModel
         return new JsonResult(new { success = true });
     }
 
-    public async Task<IActionResult> OnPostEditAsync(Article article, string? tags)
+    public async Task<IActionResult> OnPostEditAsync(int id, string title, string summary, string content,
+        int categoryId, string? tags, string? sourceName, string? sourceUrl, string? imageUrl, bool isPublished = false)
     {
-        var existing = await _context.Articles.FindAsync(article.Id);
-        if (existing == null)
+        var article = await _context.Articles.FindAsync(id);
+        if (article == null)
             return NotFound();
 
-        existing.Title = article.Title;
-        existing.Slug = GenerateSlug(article.Title);
-        existing.Summary = article.Summary;
-        existing.Content = article.Content;
-        existing.CategoryId = article.CategoryId;
-        existing.SourceName = article.SourceName;
-        existing.SourceUrl = article.SourceUrl;
-        existing.ImageUrl = article.ImageUrl;
-        existing.UpdatedAt = DateTime.UtcNow;
-
-        if (article.IsPublished && !existing.IsPublished)
-            existing.PublishedAt = DateTime.UtcNow;
-
-        existing.IsPublished = article.IsPublished;
+        article.Title = title;
+        article.Slug = GenerateSlug(title);
+        article.Summary = summary;
+        article.Content = content;
+        article.CategoryId = categoryId;
+        article.SourceName = sourceName;
+        article.SourceUrl = sourceUrl;
+        article.ImageUrl = imageUrl;
+        article.IsPublished = isPublished;
+        article.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
-
-        await UpdateArticleTags(existing.Id, tags);
+        await UpdateArticleTags(id, tags);
 
         return new JsonResult(new { success = true });
     }
@@ -109,43 +116,37 @@ public class IndexModel : PageModel
     public async Task<IActionResult> OnPostDeleteAsync(int id)
     {
         var article = await _context.Articles.FindAsync(id);
-        if (article != null)
-        {
-            article.IsActive = false;
-            await _context.SaveChangesAsync();
-        }
+        if (article == null)
+            return NotFound();
+
+        article.IsActive = false;
+        await _context.SaveChangesAsync();
 
         return new JsonResult(new { success = true });
     }
 
-    private async Task UpdateArticleTags(int articleId, string? tagsInput)
+    private async Task UpdateArticleTags(int articleId, string? tagsString)
     {
-        // Usuń istniejące powiązania
-        var existingTags = await _context.ArticleTags
-            .Where(at => at.ArticleId == articleId)
-            .ToListAsync();
+        // Remove existing tags
+        var existingTags = await _context.ArticleTags.Where(at => at.ArticleId == articleId).ToListAsync();
         _context.ArticleTags.RemoveRange(existingTags);
 
-        if (string.IsNullOrWhiteSpace(tagsInput))
+        if (string.IsNullOrWhiteSpace(tagsString))
         {
             await _context.SaveChangesAsync();
             return;
         }
 
-        // Parsuj tagi
-        var tagNames = tagsInput
-            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+        var tagNames = tagsString.Split(',', StringSplitOptions.RemoveEmptyEntries)
             .Select(t => t.Trim())
             .Where(t => !string.IsNullOrEmpty(t))
-            .Distinct()
-            .ToList();
+            .Distinct();
 
         foreach (var tagName in tagNames)
         {
             var slug = GenerateSlug(tagName);
-
-            // Znajdź lub utwórz tag
             var tag = await _context.Tags.FirstOrDefaultAsync(t => t.Slug == slug);
+
             if (tag == null)
             {
                 tag = new Tag { Name = tagName, Slug = slug };
@@ -153,27 +154,23 @@ public class IndexModel : PageModel
                 await _context.SaveChangesAsync();
             }
 
-            // Dodaj powiązanie
-            _context.ArticleTags.Add(new ArticleTag
-            {
-                ArticleId = articleId,
-                TagId = tag.Id
-            });
+            _context.ArticleTags.Add(new ArticleTag { ArticleId = articleId, TagId = tag.Id });
         }
 
         await _context.SaveChangesAsync();
     }
 
-    private string GenerateSlug(string title)
+    private string GenerateSlug(string text)
     {
-        var slug = title.ToLower()
+        var slug = text.ToLower()
             .Replace("ą", "a").Replace("ć", "c").Replace("ę", "e")
             .Replace("ł", "l").Replace("ń", "n").Replace("ó", "o")
             .Replace("ś", "s").Replace("ź", "z").Replace("ż", "z");
 
-        slug = System.Text.RegularExpressions.Regex.Replace(slug, @"[^a-z0-9\s-]", "");
-        slug = System.Text.RegularExpressions.Regex.Replace(slug, @"\s+", "-");
+        slug = Regex.Replace(slug, @"[^a-z0-9\s-]", "");
+        slug = Regex.Replace(slug, @"\s+", "-");
+        slug = slug.Trim('-');
 
-        return slug.Trim('-');
+        return slug;
     }
 }

@@ -2,80 +2,177 @@
 @model DeepSpace.Web.Pages.ArtykulModel
 @{
     ViewData["Title"] = Model.Article!.Title + " — Deep Space";
-    var heroImage = !string.IsNullOrEmpty(Model.Article.ImageUrl) 
-        ? Model.Article.ImageUrl 
-        : "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1920&q=80";
+    ViewData["OgTitle"] = Model.Article.Title;
+    ViewData["OgDescription"] = Model.Article.Summary;
+    ViewData["OgImage"] = Model.Article.ImageUrl;
+    
+    var articleUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/artykul/{Model.Article.Slug}";
+    var encodedUrl = Uri.EscapeDataString(articleUrl);
+    var encodedTitle = Uri.EscapeDataString(Model.Article.Title);
+    
+    var hasSections = Model.Sections.Count > 1;
+    var hasContent = !string.IsNullOrEmpty(Model.Article.Content);
 }
 
-<div class="article-hero">
-    <div class="article-hero-bg" style="background-image: url('@heroImage')"></div>
-    <div class="article-hero-overlay"></div>
-    <div class="article-hero-content">
-        <a href="/kategoria/@Model.Article.Category.Slug" class="category-badge">@Model.Article.Category.Name</a>
+<article class="article-page">
+    <header class="article-header">
+        <a href="/kategoria/@Model.Article.Category.Slug" class="article-category">@Model.Article.Category.Name</a>
         <h1>@Model.Article.Title</h1>
         <div class="article-meta">
-            <time datetime="@Model.Article.PublishedAt.ToString("yyyy-MM-dd")">
-                @Model.Article.PublishedAt.ToString("d MMMM yyyy")
-            </time>
+            <time>@Model.Article.PublishedAt.ToString("d MMMM yyyy")</time>
             @if (!string.IsNullOrEmpty(Model.Article.SourceName))
             {
-                <span> • Źródło:
-                    @if (!string.IsNullOrEmpty(Model.Article.SourceUrl))
-                    {
-                        <a href="@Model.Article.SourceUrl" target="_blank" rel="noopener">@Model.Article.SourceName</a>
-                    }
-                    else
-                    {
-                        @Model.Article.SourceName
-                    }
-                </span>
+                <span class="meta-separator">·</span>
+                @if (!string.IsNullOrEmpty(Model.Article.SourceUrl))
+                {
+                    <a href="@Model.Article.SourceUrl" target="_blank" rel="noopener">@Model.Article.SourceName</a>
+                }
+                else
+                {
+                    <span>@Model.Article.SourceName</span>
+                }
             }
         </div>
-    </div>
-</div>
+    </header>
 
-<div class="container-narrow">
-    <article class="article-content fade-in">
-        @Html.Raw(Model.Article.Content)
-    </article>
-
-    @if (Model.Tags.Any())
+    @if (!string.IsNullOrEmpty(Model.Article.ImageUrl))
     {
-        <div class="tags fade-in">
-            <span class="tags-label">Tagi:</span>
-            @foreach (var tag in Model.Tags)
-            {
-                <a href="/tag/@tag.Slug" class="tag">@tag.Name</a>
-            }
+        <div class="article-featured-image">
+            <div class="article-featured-image-wrapper">
+                <img src="@Model.Article.ImageUrl" alt="@Model.Article.Title" />
+            </div>
         </div>
     }
 
+    <div class="article-container @(hasSections ? "with-sidebar" : "")">
+        @if (hasSections)
+        {
+            <aside class="article-toc">
+                <div class="article-toc-inner">
+                    <h4>Spis treści</h4>
+                    <nav>
+                        @foreach (var sec in Model.Sections)
+                        {
+                            <a href="#@sec.Slug" class="toc-link">@sec.Title</a>
+                        }
+                    </nav>
+                </div>
+            </aside>
+        }
+
+        <div class="article-main">
+            @if (hasContent && !Model.Sections.Any())
+            {
+                <div class="article-body">
+                    @Html.Raw(Model.Article.Content)
+                </div>
+            }
+            else if (Model.Sections.Any())
+            {
+                @foreach (var sec in Model.Sections)
+                {
+                    <div class="article-section" id="@sec.Slug">
+                        <h2>@sec.Title</h2>
+                        <div class="article-body">
+                            @Html.Raw(sec.Content)
+                        </div>
+                    </div>
+                }
+            }
+
+            @if (Model.Tags.Any())
+            {
+                <div class="article-tags">
+                    <h4>Tagi</h4>
+                    @foreach (var tag in Model.Tags)
+                    {
+                        <a href="/tag/@tag.Slug" class="tag">@tag.Name</a>
+                    }
+                </div>
+            }
+
+            <div class="share-section">
+                <span class="share-label">Udostępnij artykuł</span>
+                <div class="share-buttons">
+                    <a href="https://www.facebook.com/sharer/sharer.php?u=@encodedUrl" 
+                       target="_blank" rel="noopener" class="share-btn">
+                        Facebook
+                    </a>
+                    <a href="https://wa.me/?text=@encodedTitle%20@encodedUrl" 
+                       target="_blank" rel="noopener" class="share-btn">
+                        WhatsApp
+                    </a>
+                    <button class="share-btn" onclick="copyLink()">
+                        <span id="copyText">Kopiuj link</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</article>
+
+@if (Model.RelatedArticles.Any())
+{
+    <div class="related-articles">
+        <div class="related-articles-header">
+            <h2>Polecane artykuły</h2>
+        </div>
+        <div class="related-articles-grid">
+            @foreach (var related in Model.RelatedArticles)
+            {
+                <a href="/artykul/@related.Article.Slug" class="related-card">
+                    <img src="@(related.Article.ImageUrl ?? "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800")" alt="@related.Article.Title" />
+                    <div class="related-card-overlay"></div>
+                    <div class="related-card-content">
+                        <span class="related-card-category">@related.Article.Category.Name</span>
+                        <h3>@related.Article.Title</h3>
+                        <time>@related.Article.PublishedAt.ToString("d MMMM yyyy")</time>
+                    </div>
+                </a>
+            }
+        </div>
+    </div>
+}
+
+<div class="back-link-container">
     <div class="back-link">
-        <a href="/">← Wróć do strony głównej</a>
+        <a href="/">← Powrót do strony głównej</a>
     </div>
 </div>
 
 @section Scripts {
 <script>
-    // Parallax for article hero
-    window.addEventListener('scroll', () => {
-        const scrolled = window.pageYOffset;
-        const heroBg = document.querySelector('.article-hero-bg');
-        if (heroBg && scrolled < window.innerHeight) {
-            heroBg.style.transform = `translateY(${scrolled * 0.4}px)`;
-        }
-    });
-
-    // Fade in
-    const fadeElements = document.querySelectorAll('.fade-in');
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
-            }
+    function copyLink() {
+        navigator.clipboard.writeText('@articleUrl').then(() => {
+            document.getElementById('copyText').textContent = 'Skopiowano!';
+            setTimeout(() => {
+                document.getElementById('copyText').textContent = 'Kopiuj link';
+            }, 2000);
         });
-    }, { threshold: 0.1 });
+    }
 
-    fadeElements.forEach(el => observer.observe(el));
+    // Podświetlanie aktywnej sekcji w spisie treści
+    const tocLinks = document.querySelectorAll('.toc-link');
+    const sections = document.querySelectorAll('.article-section');
+    
+    if (tocLinks.length > 0 && sections.length > 0) {
+        const observerOptions = {
+            root: null,
+            rootMargin: '-20% 0px -70% 0px',
+            threshold: 0
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    tocLinks.forEach(link => link.classList.remove('active'));
+                    const activeLink = document.querySelector(`.toc-link[href="#${entry.target.id}"]`);
+                    if (activeLink) activeLink.classList.add('active');
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(sec => observer.observe(sec));
+    }
 </script>
 }

@@ -1,7 +1,7 @@
 @page "/admin/categories"
 @model DeepSpace.Web.Pages.Admin.Categories.IndexModel
 @{
-    ViewData["Title"] = "Kategorie — Admin";
+ViewData["Title"] = "Kategorie";
 }
 
 <div class="admin-container">
@@ -12,54 +12,51 @@
 
     <table class="admin-table">
         <thead>
-            <tr>
-                <th>Nazwa</th>
-                <th>Slug</th>
-                <th>Opis</th>
-                <th>Artykuły</th>
-                <th>Akcje</th>
-            </tr>
+        <tr>
+            <th>Nazwa</th>
+            <th>Slug</th>
+            <th>Opis</th>
+            <th>Artykuły</th>
+            <th>Akcje</th>
+        </tr>
         </thead>
         <tbody>
-            @foreach (var category in Model.Categories)
-            {
-                <tr>
-                    <td>@category.Name</td>
-                    <td><code>@category.Slug</code></td>
-                    <td>@(category.Description ?? "—")</td>
-                    <td>@category.Articles.Count</td>
-                    <td class="actions">
-                        <button class="btn-link" onclick="openEditModal(@category.Id)">Edytuj</button>
-                        <button class="btn-link delete" onclick="openDeleteModal(@category.Id, '@category.Name.Replace("'", "\\'")')">Usuń</button>
-                    </td>
-                </tr>
-            }
+        @foreach (var category in Model.Categories)
+        {
+        <tr>
+            <td><strong>@category.Name</strong></td>
+            <td><code>@category.Slug</code></td>
+            <td>@(category.Description ?? "—")</td>
+            <td>@category.Articles.Count(a => a.IsActive && a.IsPublished)</td>
+            <td class="actions">
+                <button class="btn-link" onclick="openEditModal(@category.Id, '@category.Name.Replace("'", "\\'")', '@(category.Description?.Replace("'", "\\'") ?? "")')">Edytuj</button>
+                <button class="btn-link delete" onclick="openDeleteModal(@category.Id, '@category.Name.Replace("'", "\\'")')">Usuń</button>
+            </td>
+        </tr>
+        }
         </tbody>
     </table>
-
-    <div class="back-link">
-        <a href="/admin">← Wróć do panelu</a>
-    </div>
 </div>
 
-<!-- Modal Create/Edit -->
-<div id="categoryModal" class="modal">
+<!-- Modal: Create/Edit -->
+<div class="modal" id="categoryModal">
     <div class="modal-content">
         <div class="modal-header">
             <h2 id="modalTitle">Nowa kategoria</h2>
             <button class="modal-close" onclick="closeModal()">&times;</button>
         </div>
-        <form id="categoryForm" class="admin-form">
-            <input type="hidden" id="categoryId" name="category.Id" value="0" />
+        <form id="categoryForm" class="admin-form" onsubmit="return saveCategory(event)">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="categoryId" name="id" />
 
             <div class="form-group">
-                <label for="Name">Nazwa</label>
-                <input type="text" id="Name" name="category.Name" required />
+                <label for="name">Nazwa</label>
+                <input type="text" id="name" name="name" required />
             </div>
 
             <div class="form-group">
-                <label for="Description">Opis</label>
-                <textarea id="Description" name="category.Description" rows="3"></textarea>
+                <label for="description">Opis</label>
+                <textarea id="description" name="description" rows="3"></textarea>
             </div>
 
             <div class="form-actions">
@@ -70,19 +67,18 @@
     </div>
 </div>
 
-<!-- Modal Delete -->
-<div id="deleteModal" class="modal">
+<!-- Modal: Delete -->
+<div class="modal" id="deleteModal">
     <div class="modal-content">
         <div class="modal-header">
             <h2>Usuń kategorię</h2>
             <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
         </div>
-        <div class="delete-confirm">
+        <div style="padding: 2rem;">
             <p>Czy na pewno chcesz usunąć kategorię:</p>
-            <h3 id="deleteTitle"></h3>
-            <p id="deleteError" class="error-message" style="display: none;"></p>
+            <p><strong id="deleteTitle"></strong></p>
             <div class="form-actions">
-                <button class="btn btn-danger" onclick="confirmDelete()">Tak, usuń</button>
+                <button class="btn btn-danger" onclick="confirmDelete()">Usuń</button>
                 <button class="btn btn-secondary" onclick="closeDeleteModal()">Anuluj</button>
             </div>
         </div>
@@ -91,25 +87,20 @@
 
 @section Scripts {
 <script>
-    let currentDeleteId = 0;
+    let currentDeleteId = null;
 
     function openCreateModal() {
         document.getElementById('modalTitle').textContent = 'Nowa kategoria';
         document.getElementById('categoryForm').reset();
-        document.getElementById('categoryId').value = '0';
+        document.getElementById('categoryId').value = '';
         document.getElementById('categoryModal').classList.add('open');
     }
 
-    async function openEditModal(id) {
+    function openEditModal(id, name, description) {
         document.getElementById('modalTitle').textContent = 'Edytuj kategorię';
-
-        const response = await fetch(`/admin/categories?handler=Edit&id=${id}`);
-        const category = await response.json();
-
-        document.getElementById('categoryId').value = category.id;
-        document.getElementById('Name').value = category.name || '';
-        document.getElementById('Description').value = category.description || '';
-
+        document.getElementById('categoryId').value = id;
+        document.getElementById('name').value = name;
+        document.getElementById('description').value = description;
         document.getElementById('categoryModal').classList.add('open');
     }
 
@@ -117,56 +108,56 @@
         document.getElementById('categoryModal').classList.remove('open');
     }
 
+    async function saveCategory(e) {
+        e.preventDefault();
+
+        const formData = new FormData(document.getElementById('categoryForm'));
+        const id = formData.get('id');
+        const handler = id ? 'Edit' : 'Create';
+
+        const response = await fetch(`/admin/categories?handler=${handler}`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            const error = await response.text();
+            alert(error || 'Wystąpił błąd');
+        }
+
+        return false;
+    }
+
     function openDeleteModal(id, name) {
         currentDeleteId = id;
         document.getElementById('deleteTitle').textContent = name;
-        document.getElementById('deleteError').style.display = 'none';
         document.getElementById('deleteModal').classList.add('open');
     }
 
     function closeDeleteModal() {
         document.getElementById('deleteModal').classList.remove('open');
+        currentDeleteId = null;
     }
 
-    document.getElementById('categoryForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const formData = new FormData(e.target);
-        const id = document.getElementById('categoryId').value;
-        const handler = id === '0' ? 'Create' : 'Edit';
-
-        const token = document.querySelector('input[name="__RequestVerificationToken"]');
-
-        const response = await fetch(`/admin/categories?handler=${handler}`, {
-            method: 'POST',
-            body: formData,
-            headers: token ? { 'RequestVerificationToken': token.value } : {}
-        });
-
-        if (response.ok) {
-            location.reload();
-        }
-    });
-
     async function confirmDelete() {
+        if (!currentDeleteId) return;
+
         const formData = new FormData();
         formData.append('id', currentDeleteId);
-
-        const token = document.querySelector('input[name="__RequestVerificationToken"]');
+        formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
 
         const response = await fetch('/admin/categories?handler=Delete', {
             method: 'POST',
-            body: formData,
-            headers: token ? { 'RequestVerificationToken': token.value } : {}
+            body: formData
         });
 
-        const result = await response.json();
-
-        if (result.success) {
-            location.reload();
+        if (response.ok) {
+            window.location.reload();
         } else {
-            document.getElementById('deleteError').textContent = result.message;
-            document.getElementById('deleteError').style.display = 'block';
+            const error = await response.text();
+            alert(error || 'Nie można usunąć kategorii');
         }
     }
 
@@ -176,16 +167,5 @@
             closeDeleteModal();
         }
     });
-
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal();
-                closeDeleteModal();
-            }
-        });
-    });
 </script>
 }
-
-@Html.AntiForgeryToken()

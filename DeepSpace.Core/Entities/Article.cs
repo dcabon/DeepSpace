@@ -19,6 +19,7 @@ public class Article
     public Category Category { get; set; } = null!;
     
     public ICollection<ArticleTag> ArticleTags { get; set; } = new List<ArticleTag>();
+    public ICollection<ArticleSection> Sections { get; set; } = new List<ArticleSection>();
     
     public bool IsActive { get; set; } = true;
 }

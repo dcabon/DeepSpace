@@ -1,7 +1,7 @@
 @page "/admin/tags"
 @model DeepSpace.Web.Pages.Admin.Tags.IndexModel
 @{
-    ViewData["Title"] = "Tagi — Admin";
+ViewData["Title"] = "Tagi";
 }
 
 <div class="admin-container">
@@ -12,47 +12,44 @@
 
     <table class="admin-table">
         <thead>
-            <tr>
-                <th>Nazwa</th>
-                <th>Slug</th>
-                <th>Artykuły</th>
-                <th>Akcje</th>
-            </tr>
+        <tr>
+            <th>Nazwa</th>
+            <th>Slug</th>
+            <th>Artykuły</th>
+            <th>Akcje</th>
+        </tr>
         </thead>
         <tbody>
-            @foreach (var tag in Model.Tags)
-            {
-                <tr>
-                    <td>@tag.Name</td>
-                    <td><code>@tag.Slug</code></td>
-                    <td>@tag.ArticleTags.Count</td>
-                    <td class="actions">
-                        <button class="btn-link" onclick="openEditModal(@tag.Id)">Edytuj</button>
-                        <button class="btn-link delete" onclick="openDeleteModal(@tag.Id, '@tag.Name.Replace("'", "\\'")')">Usuń</button>
-                    </td>
-                </tr>
-            }
+        @foreach (var tag in Model.Tags)
+        {
+        <tr>
+            <td><strong>@tag.Name</strong></td>
+            <td><code>@tag.Slug</code></td>
+            <td>@tag.ArticleTags.Count</td>
+            <td class="actions">
+                <button class="btn-link" onclick="openEditModal(@tag.Id, '@tag.Name.Replace("'", "\\'")')">Edytuj</button>
+                <button class="btn-link delete" onclick="openDeleteModal(@tag.Id, '@tag.Name.Replace("'", "\\'")')">Usuń</button>
+            </td>
+        </tr>
+        }
         </tbody>
     </table>
-
-    <div class="back-link">
-        <a href="/admin">← Wróć do panelu</a>
-    </div>
 </div>
 
-<!-- Modal Create/Edit -->
-<div id="tagModal" class="modal">
+<!-- Modal: Create/Edit -->
+<div class="modal" id="tagModal">
     <div class="modal-content">
         <div class="modal-header">
             <h2 id="modalTitle">Nowy tag</h2>
             <button class="modal-close" onclick="closeModal()">&times;</button>
         </div>
-        <form id="tagForm" class="admin-form">
-            <input type="hidden" id="tagId" name="tag.Id" value="0" />
+        <form id="tagForm" class="admin-form" onsubmit="return saveTag(event)">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="tagId" name="id" />
 
             <div class="form-group">
-                <label for="Name">Nazwa</label>
-                <input type="text" id="Name" name="tag.Name" required />
+                <label for="name">Nazwa</label>
+                <input type="text" id="name" name="name" required />
             </div>
 
             <div class="form-actions">
@@ -63,18 +60,18 @@
     </div>
 </div>
 
-<!-- Modal Delete -->
-<div id="deleteModal" class="modal">
+<!-- Modal: Delete -->
+<div class="modal" id="deleteModal">
     <div class="modal-content">
         <div class="modal-header">
             <h2>Usuń tag</h2>
             <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
         </div>
-        <div class="delete-confirm">
+        <div style="padding: 2rem;">
             <p>Czy na pewno chcesz usunąć tag:</p>
-            <h3 id="deleteTitle"></h3>
+            <p><strong id="deleteTitle"></strong></p>
             <div class="form-actions">
-                <button class="btn btn-danger" onclick="confirmDelete()">Tak, usuń</button>
+                <button class="btn btn-danger" onclick="confirmDelete()">Usuń</button>
                 <button class="btn btn-secondary" onclick="closeDeleteModal()">Anuluj</button>
             </div>
         </div>
@@ -83,29 +80,45 @@
 
 @section Scripts {
 <script>
-    let currentDeleteId = 0;
+    let currentDeleteId = null;
 
     function openCreateModal() {
         document.getElementById('modalTitle').textContent = 'Nowy tag';
         document.getElementById('tagForm').reset();
-        document.getElementById('tagId').value = '0';
+        document.getElementById('tagId').value = '';
         document.getElementById('tagModal').classList.add('open');
     }
 
-    async function openEditModal(id) {
+    function openEditModal(id, name) {
         document.getElementById('modalTitle').textContent = 'Edytuj tag';
-
-        const response = await fetch(`/admin/tags?handler=Edit&id=${id}`);
-        const tag = await response.json();
-
-        document.getElementById('tagId').value = tag.id;
-        document.getElementById('Name').value = tag.name || '';
-
+        document.getElementById('tagId').value = id;
+        document.getElementById('name').value = name;
         document.getElementById('tagModal').classList.add('open');
     }
 
     function closeModal() {
         document.getElementById('tagModal').classList.remove('open');
+    }
+
+    async function saveTag(e) {
+        e.preventDefault();
+
+        const formData = new FormData(document.getElementById('tagForm'));
+        const id = formData.get('id');
+        const handler = id ? 'Edit' : 'Create';
+
+        const response = await fetch(`/admin/tags?handler=${handler}`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            alert('Wystąpił błąd');
+        }
+
+        return false;
     }
 
     function openDeleteModal(id, name) {
@@ -116,42 +129,23 @@
 
     function closeDeleteModal() {
         document.getElementById('deleteModal').classList.remove('open');
+        currentDeleteId = null;
     }
 
-    document.getElementById('tagForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const formData = new FormData(e.target);
-        const id = document.getElementById('tagId').value;
-        const handler = id === '0' ? 'Create' : 'Edit';
-
-        const token = document.querySelector('input[name="__RequestVerificationToken"]');
-
-        const response = await fetch(`/admin/tags?handler=${handler}`, {
-            method: 'POST',
-            body: formData,
-            headers: token ? { 'RequestVerificationToken': token.value } : {}
-        });
-
-        if (response.ok) {
-            location.reload();
-        }
-    });
-
     async function confirmDelete() {
+        if (!currentDeleteId) return;
+
         const formData = new FormData();
         formData.append('id', currentDeleteId);
-
-        const token = document.querySelector('input[name="__RequestVerificationToken"]');
+        formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
 
         const response = await fetch('/admin/tags?handler=Delete', {
             method: 'POST',
-            body: formData,
-            headers: token ? { 'RequestVerificationToken': token.value } : {}
+            body: formData
         });
 
         if (response.ok) {
-            location.reload();
+            window.location.reload();
         }
     }
 
@@ -161,16 +155,5 @@
             closeDeleteModal();
         }
     });
-
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal();
-                closeDeleteModal();
-            }
-        });
-    });
 </script>
 }
-
-@Html.AntiForgeryToken()

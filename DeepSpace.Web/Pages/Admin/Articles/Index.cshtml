@@ -1,7 +1,7 @@
 @page "/admin/articles"
 @model DeepSpace.Web.Pages.Admin.Articles.IndexModel
 @{
-    ViewData["Title"] = "Artykuły — Admin";
+ViewData["Title"] = "Artykuły";
 }
 
 <div class="admin-container">
@@ -15,7 +15,6 @@
         <tr>
             <th>Tytuł</th>
             <th>Kategoria</th>
-            <th>Tagi</th>
             <th>Status</th>
             <th>Data</th>
             <th>Akcje</th>
@@ -24,101 +23,97 @@
         <tbody>
         @foreach (var article in Model.Articles)
         {
-            <tr data-id="@article.Id">
-                <td>@article.Title</td>
-                <td>@article.Category.Name</td>
-                <td>
-                    @if (article.ArticleTags.Any())
-                    {
-                        @string.Join(", ", article.ArticleTags.Select(at => at.Tag.Name))
-                    }
-                    else
-                    {
-                        <span class="text-muted">—</span>
-                    }
-                </td>
-                <td>
-                    @if (article.IsPublished)
-                    {
-                        <span class="status published">Opublikowany</span>
-                    }
-                    else
-                    {
-                        <span class="status draft">Szkic</span>
-                    }
-                </td>
-                <td>@article.CreatedAt.ToString("dd.MM.yyyy")</td>
-                <td class="actions">
-                    <button class="btn-link" onclick="openEditModal(@article.Id)">Edytuj</button>
-                    <button class="btn-link delete" onclick="openDeleteModal(@article.Id, '@article.Title.Replace("'", "\\'")')">Usuń</button>
-                </td>
-            </tr>
+        <tr>
+            <td><strong>@article.Title</strong></td>
+            <td>@article.Category.Name</td>
+            <td>
+                @if (article.IsPublished)
+                {
+                <span class="status published">Opublikowany</span>
+                }
+                else
+                {
+                <span class="status draft">Szkic</span>
+                }
+            </td>
+            <td>@article.PublishedAt.ToString("dd.MM.yyyy")</td>
+            <td class="actions">
+                <a href="/admin/articles/edit/@article.Id" class="btn-link">Edytuj</a>
+                <button class="btn-link delete" onclick="openDeleteModal(@article.Id, '@article.Title.Replace("'", "\\'")')">Usuń</button>
+            </td>
+        </tr>
         }
         </tbody>
     </table>
-    
-    <div class="back-link">
-        <a href="/admin">← Wróć do panelu</a>
-    </div>
+
+    @if (!Model.Articles.Any())
+    {
+    <p class="text-center text-muted mt-2">Brak artykułów. Dodaj pierwszy!</p>
+    }
 </div>
 
-<!-- Modal Create/Edit -->
-<div id="articleModal" class="modal">
+<!-- Modal: Create/Edit -->
+<div class="modal" id="articleModal">
     <div class="modal-content modal-large">
         <div class="modal-header">
             <h2 id="modalTitle">Nowy artykuł</h2>
             <button class="modal-close" onclick="closeModal()">&times;</button>
         </div>
-        <form id="articleForm" class="admin-form">
-            <input type="hidden" id="articleId" name="article.Id" value="0" />
-            
+        <form id="articleForm" class="admin-form" onsubmit="return saveArticle(event)">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="articleId" name="id" />
+
             <div class="form-group">
-                <label for="Title">Tytuł</label>
-                <input type="text" id="Title" name="article.Title" required />
+                <label for="title">Tytuł</label>
+                <input type="text" id="title" name="title" required />
             </div>
 
             <div class="form-group">
-                <label for="Summary">Streszczenie</label>
-                <textarea id="Summary" name="article.Summary" rows="3"></textarea>
+                <label for="summary">Streszczenie</label>
+                <textarea id="summary" name="summary" rows="3"></textarea>
             </div>
 
             <div class="form-group">
-                <label>Treść</label>
+                <label for="content">Treść</label>
                 <div id="editor"></div>
-                <input type="hidden" id="Content" name="article.Content" />
+                <input type="hidden" id="content" name="content" />
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="CategoryId">Kategoria</label>
-                    <select id="CategoryId" name="article.CategoryId" asp-items="Model.Categories"></select>
+                    <label for="categoryId">Kategoria</label>
+                    <select id="categoryId" name="categoryId" required>
+                        @foreach (var cat in Model.Categories)
+                        {
+                        <option value="@cat.Id">@cat.Name</option>
+                        }
+                    </select>
                 </div>
-
                 <div class="form-group">
-                    <label for="SourceName">Nazwa źródła</label>
-                    <input type="text" id="SourceName" name="article.SourceName" placeholder="np. NASA" />
+                    <label for="tags">Tagi (oddzielone przecinkami)</label>
+                    <input type="text" id="tags" name="tags" placeholder="NASA, Mars, kosmos" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="sourceName">Źródło (nazwa)</label>
+                    <input type="text" id="sourceName" name="sourceName" />
+                </div>
+                <div class="form-group">
+                    <label for="sourceUrl">Źródło (URL)</label>
+                    <input type="url" id="sourceUrl" name="sourceUrl" />
                 </div>
             </div>
 
             <div class="form-group">
-                <label for="SourceUrl">URL źródła</label>
-                <input type="url" id="SourceUrl" name="article.SourceUrl" placeholder="https://..." />
+                <label for="imageUrl">URL obrazka</label>
+                <input type="url" id="imageUrl" name="imageUrl" />
             </div>
 
             <div class="form-group">
-                <label for="ImageUrl">URL obrazka</label>
-                <input type="text" id="ImageUrl" name="article.ImageUrl" placeholder="/images/..." />
-            </div>
-            
-            <div class="form-group">
-                <label for="Tags">Tagi (oddzielone przecinkami)</label>
-                <input type="text" id="Tags" name="tags" placeholder="np. NASA, Mars, James Webb" />
-                <small class="form-hint">Nowe tagi zostaną utworzone automatycznie</small>
-            </div>
-
-            <div class="form-group checkbox">
                 <label>
-                    <input type="checkbox" id="IsPublished" name="article.IsPublished" value="true" />
+                    <input type="checkbox" id="isPublished" name="isPublished" value="true" checked />
                     Opublikowany
                 </label>
             </div>
@@ -131,102 +126,97 @@
     </div>
 </div>
 
-<!-- Modal Delete -->
-<div id="deleteModal" class="modal">
+<!-- Modal: Delete -->
+<div class="modal" id="deleteModal">
     <div class="modal-content">
         <div class="modal-header">
             <h2>Usuń artykuł</h2>
             <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
         </div>
-        <div class="delete-confirm">
+        <div style="padding: 2rem;">
             <p>Czy na pewno chcesz usunąć artykuł:</p>
-            <h3 id="deleteTitle"></h3>
+            <p><strong id="deleteTitle"></strong></p>
             <div class="form-actions">
-                <button class="btn btn-danger" onclick="confirmDelete()">Tak, usuń</button>
+                <button class="btn btn-danger" onclick="confirmDelete()">Usuń</button>
                 <button class="btn btn-secondary" onclick="closeDeleteModal()">Anuluj</button>
             </div>
         </div>
     </div>
 </div>
 
-<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
-<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
-
 @section Scripts {
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 <script>
-    let currentDeleteId = 0;
-    let quill = null;
+    let quill;
+    let currentDeleteId = null;
 
-    function initEditor() {
-        if (quill) return;
-        
+    document.addEventListener('DOMContentLoaded', function() {
         quill = new Quill('#editor', {
             theme: 'snow',
             modules: {
                 toolbar: [
-                    [{ 'header': [1, 2, 3, false] }],
-                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'header': [2, 3, false] }],
+                    ['bold', 'italic', 'underline'],
                     [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    [{ 'align': [] }],
                     ['link', 'image'],
                     ['clean']
                 ]
             }
         });
-    }
-
-    function destroyEditor() {
-        if (quill) {
-            quill = null;
-            document.getElementById('editor').innerHTML = '';
-        }
-    }
+    });
 
     function openCreateModal() {
         document.getElementById('modalTitle').textContent = 'Nowy artykuł';
         document.getElementById('articleForm').reset();
-        document.getElementById('articleId').value = '0';
-        document.getElementById('Tags').value = '';
+        document.getElementById('articleId').value = '';
+        quill.root.innerHTML = '';
         document.getElementById('articleModal').classList.add('open');
-        
-        setTimeout(() => {
-            destroyEditor();
-            document.getElementById('editor').innerHTML = '';
-            initEditor();
-        }, 50);
     }
 
     async function openEditModal(id) {
-        document.getElementById('modalTitle').textContent = 'Edytuj artykuł';
-
-        const response = await fetch(`/admin/articles?handler=Edit&id=${id}`);
+        const response = await fetch(`/admin/articles?handler=Article&id=${id}`);
         const article = await response.json();
 
+        document.getElementById('modalTitle').textContent = 'Edytuj artykuł';
         document.getElementById('articleId').value = article.id;
-        document.getElementById('Title').value = article.title || '';
-        document.getElementById('Summary').value = article.summary || '';
-        document.getElementById('CategoryId').value = article.categoryId;
-        document.getElementById('SourceName').value = article.sourceName || '';
-        document.getElementById('SourceUrl').value = article.sourceUrl || '';
-        document.getElementById('ImageUrl').value = article.imageUrl || '';
-        document.getElementById('Tags').value = article.tags || '';
-        document.getElementById('IsPublished').checked = article.isPublished;
+        document.getElementById('title').value = article.title;
+        document.getElementById('summary').value = article.summary || '';
+        quill.root.innerHTML = article.content || '';
+        document.getElementById('categoryId').value = article.categoryId;
+        document.getElementById('tags').value = article.tags || '';
+        document.getElementById('sourceName').value = article.sourceName || '';
+        document.getElementById('sourceUrl').value = article.sourceUrl || '';
+        document.getElementById('imageUrl').value = article.imageUrl || '';
+        document.getElementById('isPublished').checked = article.isPublished;
 
         document.getElementById('articleModal').classList.add('open');
-        
-        setTimeout(() => {
-            destroyEditor();
-            document.getElementById('editor').innerHTML = '';
-            initEditor();
-            if (article.content) {
-                quill.root.innerHTML = article.content;
-            }
-        }, 50);
     }
 
     function closeModal() {
-        destroyEditor();
         document.getElementById('articleModal').classList.remove('open');
+    }
+
+    async function saveArticle(e) {
+        e.preventDefault();
+
+        document.getElementById('content').value = quill.root.innerHTML;
+
+        const formData = new FormData(document.getElementById('articleForm'));
+        const id = formData.get('id');
+        const handler = id ? 'Edit' : 'Create';
+
+        const response = await fetch(`/admin/articles?handler=${handler}`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            alert('Wystąpił błąd podczas zapisywania');
+        }
+
+        return false;
     }
 
     function openDeleteModal(id, title) {
@@ -237,65 +227,32 @@
 
     function closeDeleteModal() {
         document.getElementById('deleteModal').classList.remove('open');
+        currentDeleteId = null;
     }
 
-    document.getElementById('articleForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        document.getElementById('Content').value = quill ? quill.root.innerHTML : '';
-
-        const formData = new FormData(e.target);
-        const id = document.getElementById('articleId').value;
-        const handler = id === '0' ? 'Create' : 'Edit';
-
-        const token = document.querySelector('input[name="__RequestVerificationToken"]');
-
-        const response = await fetch(`/admin/articles?handler=${handler}`, {
-            method: 'POST',
-            body: formData,
-            headers: token ? { 'RequestVerificationToken': token.value } : {}
-        });
-
-        if (response.ok) {
-            location.reload();
-        }
-    });
-
     async function confirmDelete() {
+        if (!currentDeleteId) return;
+
         const formData = new FormData();
         formData.append('id', currentDeleteId);
-
-        const token = document.querySelector('input[name="__RequestVerificationToken"]');
+        formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
 
         const response = await fetch('/admin/articles?handler=Delete', {
             method: 'POST',
-            body: formData,
-            headers: token ? { 'RequestVerificationToken': token.value } : {}
+            body: formData
         });
 
         if (response.ok) {
-            location.reload();
+            window.location.reload();
         }
     }
 
+    // Close modals on ESC
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeModal();
             closeDeleteModal();
         }
     });
-
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal();
-                closeDeleteModal();
-            }
-        });
-    });
 </script>
 }
-
-
-<!-- Anti-forgery token -->
-@Html.AntiForgeryToken()

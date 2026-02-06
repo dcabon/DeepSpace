@@ -1,7 +1,7 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Security.Claims;
 
 namespace DeepSpace.Web.Pages.Admin;
 
@@ -14,40 +14,38 @@ public class LoginModel : PageModel
         _configuration = configuration;
     }
 
-    [BindProperty]
-    public string Username { get; set; } = string.Empty;
-
-    [BindProperty]
-    public string Password { get; set; } = string.Empty;
-
-    public string? Error { get; set; }
+    public string? ErrorMessage { get; set; }
 
     public void OnGet()
     {
     }
 
-    public async Task<IActionResult> OnPostAsync()
+    public async Task<IActionResult> OnPostAsync(string username, string password)
     {
         var adminUsername = _configuration["Admin:Username"];
         var adminPassword = _configuration["Admin:Password"];
 
-        if (Username == adminUsername && Password == adminPassword)
+        if (username == adminUsername && password == adminPassword)
         {
             var claims = new List<Claim>
             {
-                new(ClaimTypes.Name, Username),
-                new(ClaimTypes.Role, "Admin")
+                new Claim(ClaimTypes.Name, username),
+                new Claim(ClaimTypes.Role, "Admin")
             };
 
             var identity = new ClaimsIdentity(claims, "AdminCookie");
             var principal = new ClaimsPrincipal(identity);
 
-            await HttpContext.SignInAsync("AdminCookie", principal);
+            await HttpContext.SignInAsync("AdminCookie", principal, new AuthenticationProperties
+            {
+                IsPersistent = true,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
+            });
 
             return Redirect("/admin");
         }
 
-        Error = "Nieprawidłowa nazwa użytkownika lub hasło";
+        ErrorMessage = "Nieprawidłowy login lub hasło";
         return Page();
     }
 }

@@ -5,9 +5,12 @@
 }
 
 <div class="admin-container">
-    <h1>Edytuj artykuł</h1>
+    <div class="admin-header">
+        <h1>Edytuj artykuł</h1>
+        <a href="/admin/articles" class="btn btn-secondary">← Powrót</a>
+    </div>
 
-    <form method="post" class="admin-form">
+    <form method="post" class="admin-form" style="margin-bottom: 2rem;">
         <input type="hidden" asp-for="Article.Id" />
         
         <div class="form-group">
@@ -18,11 +21,6 @@
         <div class="form-group">
             <label for="Summary">Streszczenie</label>
             <textarea id="Summary" asp-for="Article.Summary" rows="3"></textarea>
-        </div>
-
-        <div class="form-group">
-            <label for="Content">Treść (HTML)</label>
-            <textarea id="Content" asp-for="Article.Content" rows="15"></textarea>
         </div>
 
         <div class="form-row">
@@ -56,7 +54,178 @@
 
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Zapisz zmiany</button>
-            <a href="/admin/articles" class="btn btn-secondary">Anuluj</a>
+            @if (Model.Article.IsPublished)
+            {
+                <a href="/artykul/@Model.Article.Slug" target="_blank" class="btn btn-secondary">Podgląd →</a>
+            }
         </div>
     </form>
+
+    <!-- Sekcja sekcji artykułu -->
+    <div class="sections-management">
+        <div class="section-header" style="margin-bottom: 1.5rem;">
+            <h2>Sekcje (@Model.Sections.Count)</h2>
+            <div class="section-line"></div>
+            <button class="btn btn-primary" onclick="openSectionModal()">+ Dodaj sekcję</button>
+        </div>
+
+        <p class="text-muted" style="margin-bottom: 1.5rem;">
+            Jeśli artykuł ma więcej niż jedną sekcję, po lewej stronie pojawi się spis treści z linkami do sekcji.
+        </p>
+
+        @if (Model.Sections.Any())
+        {
+            <div class="sections-list">
+                @foreach (var sec in Model.Sections)
+                {
+                    <div class="section-item">
+                        <div class="section-item-header">
+                            <span class="section-item-number">@(sec.OrderIndex + 1)</span>
+                            <div class="section-item-info">
+                                <h3>@sec.Title</h3>
+                                <small class="text-muted">#@sec.Slug</small>
+                            </div>
+                            <div class="section-item-actions">
+                                <button class="btn-link" onclick="editSection(@sec.Id)">Edytuj</button>
+                                <button class="btn-link delete" onclick="deleteSection(@sec.Id)">Usuń</button>
+                            </div>
+                        </div>
+                        <div class="section-item-preview">
+                            @{
+                                var preview = System.Text.RegularExpressions.Regex.Replace(sec.Content, "<.*?>", "");
+                                if (preview.Length > 150) preview = preview.Substring(0, 150) + "...";
+                            }
+                            <p>@preview</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <p>Brak sekcji. Dodaj pierwszą sekcję do artykułu lub użyj głównego pola treści powyżej.</p>
+            </div>
+        }
+    </div>
 </div>
+
+<!-- Modal dodawania/edycji sekcji -->
+<div class="modal" id="sectionModal">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h2 id="sectionModalTitle">Nowa sekcja</h2>
+            <button class="modal-close" onclick="closeSectionModal()">&times;</button>
+        </div>
+        <form method="post" asp-page-handler="SaveSection" class="admin-form" id="sectionForm">
+            <input type="hidden" name="ArticleId" value="@Model.Article.Id" />
+            <input type="hidden" name="SectionId" id="sectionId" value="0" />
+            
+            <div class="form-group">
+                <label>Tytuł sekcji</label>
+                <input type="text" name="SectionTitle" id="sectionTitle" required />
+            </div>
+            
+            <div class="form-group">
+                <label>Treść sekcji</label>
+                <div id="sectionEditor" style="height: 300px;"></div>
+                <input type="hidden" name="SectionContent" id="sectionContent" />
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeSectionModal()">Anuluj</button>
+                <button type="submit" class="btn btn-primary">Zapisz sekcję</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal usuwania sekcji -->
+<div class="modal" id="deleteSectionModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Usuń sekcję</h2>
+            <button class="modal-close" onclick="closeDeleteSectionModal()">&times;</button>
+        </div>
+        <form method="post" asp-page-handler="DeleteSection" class="admin-form">
+            <input type="hidden" name="SectionId" id="deleteSectionId" />
+            <p>Czy na pewno chcesz usunąć tę sekcję?</p>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeDeleteSectionModal()">Anuluj</button>
+                <button type="submit" class="btn btn-danger">Usuń</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<script>
+    let quillEditor;
+    
+    const sectionsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        Model.Sections.Select(s => new {
+            id = s.Id,
+            title = s.Title,
+            content = s.Content
+        })
+    ));
+
+    // Inicjalizacja edytora Quill
+    document.addEventListener('DOMContentLoaded', function() {
+        quillEditor = new Quill('#sectionEditor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [2, 3, false] }],
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link', 'image'],
+                    ['clean']
+                ]
+            }
+        });
+    });
+
+    function openSectionModal() {
+        document.getElementById('sectionModalTitle').textContent = 'Nowa sekcja';
+        document.getElementById('sectionId').value = '0';
+        document.getElementById('sectionTitle').value = '';
+        if (quillEditor) quillEditor.setContents([]);
+        document.getElementById('sectionModal').classList.add('open');
+    }
+
+    function editSection(id) {
+        const sec = sectionsData.find(s => s.id === id);
+        if (!sec) return;
+        
+        document.getElementById('sectionModalTitle').textContent = 'Edytuj sekcję';
+        document.getElementById('sectionId').value = id;
+        document.getElementById('sectionTitle').value = sec.title;
+        if (quillEditor) {
+            quillEditor.root.innerHTML = sec.content;
+        }
+        document.getElementById('sectionModal').classList.add('open');
+    }
+
+    function closeSectionModal() {
+        document.getElementById('sectionModal').classList.remove('open');
+    }
+
+    function deleteSection(id) {
+        document.getElementById('deleteSectionId').value = id;
+        document.getElementById('deleteSectionModal').classList.add('open');
+    }
+
+    function closeDeleteSectionModal() {
+        document.getElementById('deleteSectionModal').classList.remove('open');
+    }
+
+    // Przed wysłaniem formularza, pobierz zawartość z Quill
+    document.getElementById('sectionForm').addEventListener('submit', function() {
+        if (quillEditor) {
+            document.getElementById('sectionContent').value = quillEditor.root.innerHTML;
+        }
+    });
+</script>
+}
