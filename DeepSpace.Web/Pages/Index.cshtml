@@ -13,6 +13,101 @@
     </div>
 </div>
 
+@section Scripts {
+<script>
+function getLocationDescription(lat, lon) {
+    // Oceany
+    if (lon >= -80 && lon <= 0 && lat >= -60 && lat <= 60)
+        return "Ocean Atlantycki";
+    if (lon >= 20 && lon <= 120 && lat >= -60 && lat <= 30)
+        return "Ocean Indyjski";
+    if ((lon >= 100 || lon <= -100) && lat >= -60 && lat <= 60)
+        return "Ocean Spokojny";
+    if (lat <= -60)
+        return "Ocean Południowy";
+    if (lat >= 70)
+        return "Ocean Arktyczny";
+
+    // Kontynenty
+    if (lon >= -10 && lon <= 40 && lat >= 35 && lat <= 70)
+        return "Europa";
+    if (lon >= 40 && lon <= 180 && lat >= 10 && lat <= 75)
+        return "Azja";
+    if (lon >= -20 && lon <= 55 && lat >= -35 && lat <= 35)
+        return "Afryka";
+    if (lon >= -170 && lon <= -50 && lat >= 15 && lat <= 75)
+        return "Ameryka Północna";
+    if (lon >= -85 && lon <= -30 && lat >= -60 && lat <= 15)
+        return "Ameryka Południowa";
+    if (lon >= 110 && lon <= 180 && lat >= -50 && lat <= -10)
+        return "Australia i Oceania";
+    if (lat <= -60)
+        return "Antarktyda";
+
+    return "Nad oceanem";
+}
+
+async function refreshIssData() {
+    const btn = document.querySelector('.iss-refresh-btn');
+    if (btn) btn.classList.add('spinning');
+    
+    try {
+        // Pobierz pozycję ISS
+        const response = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
+        const data = await response.json();
+        
+        const date = new Date(data.timestamp * 1000);
+        const formattedDate = date.toLocaleString('pl-PL', {
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        }).replace(',', '');
+        
+        const location = getLocationDescription(data.latitude, data.longitude);
+        
+        document.getElementById('issLocation').textContent = '🌍 ' + location;
+        document.getElementById('issTimestamp').textContent = formattedDate;
+        document.getElementById('issLatitude').textContent = data.latitude.toFixed(4) + '°';
+        document.getElementById('issLongitude').textContent = data.longitude.toFixed(4) + '°';
+        document.getElementById('issAltitude').textContent = Math.round(data.altitude);
+        document.getElementById('issVelocity').textContent = Math.round(data.velocity);
+    } catch (error) {
+        console.error('Błąd pobierania danych ISS:', error);
+        document.getElementById('issLocation').textContent = '⚠️ Błąd połączenia';
+    } finally {
+        if (btn) btn.classList.remove('spinning');
+    }
+}
+
+async function loadAstronauts() {
+    try {
+        const response = await fetch('http://api.open-notify.org/astros.json');
+        const data = await response.json();
+        
+        const issAstronauts = data.people.filter(p => p.craft === 'ISS');
+        
+        if (issAstronauts.length > 0) {
+            document.getElementById('issCrewCount').textContent = issAstronauts.length;
+            const list = document.getElementById('issCrewList');
+            list.innerHTML = issAstronauts.map(a => `<li>${a.name}</li>`).join('');
+            document.getElementById('issCrew').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Błąd pobierania listy astronautów:', error);
+    }
+}
+
+// Załaduj dane przy starcie strony
+document.addEventListener('DOMContentLoaded', function() {
+    refreshIssData();
+    loadAstronauts();
+});
+</script>
+}
+
 @if (Model.FeaturedArticle != null)
 {
     var featured = Model.FeaturedArticle;
@@ -42,10 +137,62 @@
     </a>
 }
 
-<div class="homepage-content @(Model.FeaturedQuiz != null ? "with-sidebar" : "")">
-    @if (Model.FeaturedQuiz != null)
-    {
+<div class="homepage-content with-sidebar">
         <aside class="homepage-sidebar">
+            <div class="sidebar-iss-widget" id="issWidget">
+                <div class="iss-widget-header">
+                    <span class="iss-icon">🛰️</span>
+                    <div>
+                        <span class="sidebar-label">ISS - Na żywo</span>
+                        <span class="iss-live-dot"></span>
+                    </div>
+                    <button class="iss-refresh-btn" onclick="refreshIssData()" title="Odśwież dane">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 2v6h-6"></path>
+                            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+                            <path d="M3 22v-6h6"></path>
+                            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="iss-location" id="issLocation">
+                    <span class="iss-loading">Ładowanie...</span>
+                </div>
+                
+                <div class="iss-timestamp" id="issTimestamp"></div>
+                
+                <div class="iss-position">
+                    <div class="iss-coord">
+                        <span class="coord-label">Szerokość</span>
+                        <span class="coord-value" id="issLatitude">--</span>
+                    </div>
+                    <div class="iss-coord">
+                        <span class="coord-label">Długość</span>
+                        <span class="coord-value" id="issLongitude">--</span>
+                    </div>
+                </div>
+                
+                <div class="iss-stats">
+                    <div class="iss-stat">
+                        <span class="stat-value" id="issAltitude">--</span>
+                        <span class="stat-label">km wysokości</span>
+                    </div>
+                    <div class="iss-stat">
+                        <span class="stat-value" id="issVelocity">--</span>
+                        <span class="stat-label">km/h</span>
+                    </div>
+                </div>
+                
+                <div class="iss-crew" id="issCrew" style="display: none;">
+                    <h4>Załoga na pokładzie (<span id="issCrewCount">0</span>)</h4>
+                    <ul id="issCrewList"></ul>
+                </div>
+            </div>
+
+            @if (Model.FeaturedQuiz != null)
+            {
+            <div class="sidebar-sticky">
             <a href="/quiz/@Model.FeaturedQuiz.Slug" class="sidebar-quiz-card">
                 <div class="sidebar-quiz-image">
                     <img src="@(Model.FeaturedQuiz.ImageUrl ?? "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=600")" alt="@Model.FeaturedQuiz.Title" />
@@ -64,8 +211,9 @@
                     </div>
                 </div>
             </a>
+            </div>
+            }
         </aside>
-    }
 
     <div class="homepage-main">
         @if (Model.LatestArticles.Any())
