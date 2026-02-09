@@ -125,6 +125,30 @@ public class IndexModel : PageModel
         return new JsonResult(new { success = true });
     }
 
+    public async Task<IActionResult> OnPostToggleFeaturedAsync(int id)
+    {
+        var article = await _context.Articles.FindAsync(id);
+        if (article == null)
+            return NotFound();
+
+        // Jeśli włączamy wyróżnienie, wyłącz inne
+        if (!article.IsFeaturedInGrid)
+        {
+            var otherFeatured = await _context.Articles
+                .Where(a => a.IsFeaturedInGrid && a.Id != id)
+                .ToListAsync();
+            foreach (var a in otherFeatured)
+            {
+                a.IsFeaturedInGrid = false;
+            }
+        }
+
+        article.IsFeaturedInGrid = !article.IsFeaturedInGrid;
+        await _context.SaveChangesAsync();
+
+        return RedirectToPage();
+    }
+
     private async Task UpdateArticleTags(int articleId, string? tagsString)
     {
         // Remove existing tags

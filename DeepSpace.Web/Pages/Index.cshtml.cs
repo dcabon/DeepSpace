@@ -15,6 +15,7 @@ public class IndexModel : PageModel
     }
 
     public Article? FeaturedArticle { get; set; }
+    public Article? FeaturedInGridArticle { get; set; }
     public List<Article> LatestArticles { get; set; } = new();
     public List<CategoryWithArticles> CategoriesWithArticles { get; set; } = new();
     public Quiz? FeaturedQuiz { get; set; }
@@ -39,18 +40,31 @@ public class IndexModel : PageModel
             .OrderByDescending(a => a.PublishedAt)
             .FirstOrDefaultAsync();
 
-        // Pobierz 6 najnowszych artykułów (bez wyróżnionego)
-        var featuredId = FeaturedArticle?.Id ?? 0;
+        // Pobierz wyróżniony artykuł w gridzie
+        FeaturedInGridArticle = await _context.Articles
+            .Include(a => a.Category)
+            .Where(a => a.IsPublished && a.IsActive && a.IsFeaturedInGrid)
+            .FirstOrDefaultAsync();
+
+        // Pobierz 6 najnowszych artykułów (bez wyróżnionego hero i wyróżnionego w gridzie)
+        var excludeIds = new List<int>();
+        if (FeaturedArticle != null) excludeIds.Add(FeaturedArticle.Id);
+        if (FeaturedInGridArticle != null) excludeIds.Add(FeaturedInGridArticle.Id);
+
+        // Jeśli jest wyróżniony w gridzie, pobierz 4 (1 obok + 3 poniżej), inaczej 6
+        var takeCount = FeaturedInGridArticle != null ? 4 : 6;
+        
         LatestArticles = await _context.Articles
             .Include(a => a.Category)
-            .Where(a => a.IsPublished && a.IsActive && a.Id != featuredId)
+            .Where(a => a.IsPublished && a.IsActive && !excludeIds.Contains(a.Id))
             .OrderByDescending(a => a.PublishedAt)
-            .Take(6)
+            .Take(takeCount)
             .ToListAsync();
 
         // Pobierz ID artykułów już wyświetlonych
         var displayedIds = LatestArticles.Select(a => a.Id).ToList();
         if (FeaturedArticle != null) displayedIds.Add(FeaturedArticle.Id);
+        if (FeaturedInGridArticle != null) displayedIds.Add(FeaturedInGridArticle.Id);
 
         // Pobierz wszystkie kategorie
         var categories = await _context.Categories.ToListAsync();

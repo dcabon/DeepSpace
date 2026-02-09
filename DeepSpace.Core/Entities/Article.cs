@@ -14,6 +14,7 @@ public class Article
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     public bool IsPublished { get; set; } = false;
+    public bool IsFeaturedInGrid { get; set; } = false;
     
     public int CategoryId { get; set; }
     public Category Category { get; set; } = null!;

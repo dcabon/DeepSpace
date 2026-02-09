@@ -16,6 +16,7 @@ ViewData["Title"] = "Artykuły";
             <th>Tytuł</th>
             <th>Kategoria</th>
             <th>Status</th>
+            <th>Wyróżniony</th>
             <th>Data</th>
             <th>Akcje</th>
         </tr>
@@ -35,6 +36,14 @@ ViewData["Title"] = "Artykuły";
                 {
                 <span class="status draft">Szkic</span>
                 }
+            </td>
+            <td>
+                <form method="post" asp-page-handler="ToggleFeatured" style="display: inline;">
+                    <input type="hidden" name="Id" value="@article.Id" />
+                    <button type="submit" class="featured-toggle @(article.IsFeaturedInGrid ? "active" : "")" title="@(article.IsFeaturedInGrid ? "Usuń z wyróżnionych" : "Wyróżnij w gridzie")">
+                        @(article.IsFeaturedInGrid ? "⭐" : "☆")
+                    </button>
+                </form>
             </td>
             <td>@article.PublishedAt.ToString("dd.MM.yyyy")</td>
             <td class="actions">

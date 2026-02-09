@@ -100,10 +100,46 @@ async function loadAstronauts() {
     }
 }
 
+// Toggle collapsible sections
+function toggleCollapsible(btn) {
+    const parent = btn.closest('.collapsible');
+    parent.classList.toggle('expanded');
+}
+
+// Toggle mobile sidebar widgets
+function toggleMobileWidget(element) {
+    if (window.innerWidth <= 900) {
+        element.classList.toggle('mobile-expanded');
+    }
+}
+
 // Załaduj dane przy starcie strony
 document.addEventListener('DOMContentLoaded', function() {
     refreshIssData();
     loadAstronauts();
+    
+    // Add click handlers for mobile collapsible widgets
+    const issWidget = document.getElementById('issWidget');
+    const quizCard = document.querySelector('.sidebar-quiz-card');
+    
+    if (issWidget) {
+        issWidget.addEventListener('click', function(e) {
+            // Don't toggle if clicking on refresh button or collapsible toggle
+            if (e.target.closest('.iss-refresh-btn') || e.target.closest('.collapsible-toggle')) return;
+            toggleMobileWidget(this);
+        });
+    }
+    
+    if (quizCard) {
+        quizCard.addEventListener('click', function(e) {
+            if (window.innerWidth <= 900) {
+                if (!this.classList.contains('mobile-expanded')) {
+                    e.preventDefault();
+                    this.classList.add('mobile-expanded');
+                }
+            }
+        });
+    }
 });
 </script>
 }
@@ -184,9 +220,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
                 
-                <div class="iss-crew" id="issCrew" style="display: none;">
-                    <h4>Załoga na pokładzie (<span id="issCrewCount">0</span>)</h4>
-                    <ul id="issCrewList"></ul>
+                <div class="iss-crew collapsible" id="issCrew" style="display: none;">
+                    <button class="collapsible-toggle" onclick="toggleCollapsible(this)">
+                        <h4>Załoga na pokładzie (<span id="issCrewCount">0</span>)</h4>
+                        <span class="collapsible-icon">▼</span>
+                    </button>
+                    <ul id="issCrewList" class="collapsible-content"></ul>
                 </div>
             </div>
 
@@ -216,7 +255,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </aside>
 
     <div class="homepage-main">
-        @if (Model.LatestArticles.Any())
+        @if (Model.LatestArticles.Any() || Model.FeaturedInGridArticle != null)
         {
             <section class="articles-section">
                 <div class="section-header">
@@ -225,124 +264,73 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 
                 @{
-                    var latestArticles = Model.LatestArticles;
-                    var index = 0;
-                    while (index < latestArticles.Count)
+                    var featuredGrid = Model.FeaturedInGridArticle;
+                    var latestArticles = Model.LatestArticles.ToList();
+                    
+                    // Jeśli jest wyróżniony - pierwszy wiersz specjalny
+                    if (featuredGrid != null)
                     {
-                        var remaining = latestArticles.Count - index;
-                        
-                        if (remaining == 1)
-                        {
-                            var article = latestArticles[index];
-                            <a href="/artykul/@article.Slug" class="article-solo">
-                                <img src="@(article.ImageUrl ?? "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1200")" alt="@article.Title" />
-                                <div class="article-solo-overlay"></div>
-                                <div class="article-solo-content">
-                                    <span class="article-category">@article.Category.Name</span>
-                                    <h3>@article.Title</h3>
-                                    <p>@article.Summary</p>
+                        var sideArticle = latestArticles.FirstOrDefault();
+                        <div class="articles-grid-featured">
+                            <a href="/artykul/@featuredGrid.Slug" class="article-featured-grid">
+                                <img src="@(featuredGrid.ImageUrl ?? "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1200")" alt="@featuredGrid.Title" />
+                                <div class="article-featured-grid-overlay"></div>
+                                <div class="article-featured-grid-content">
+                                    <span class="featured-badge">WYRÓŻNIONE</span>
+                                    <span class="article-category">@featuredGrid.Category.Name</span>
+                                    <h3>@featuredGrid.Title</h3>
+                                    <p>@featuredGrid.Summary</p>
                                     <div class="article-meta">
-                                        <time>@article.PublishedAt.ToString("d MMMM yyyy")</time>
+                                        <time>@featuredGrid.PublishedAt.ToString("d MMMM yyyy")</time>
                                     </div>
                                 </div>
                             </a>
-                            index += 1;
-                        }
-                        else if (remaining == 2)
-                        {
-                            var first = latestArticles[index];
-                            var second = latestArticles[index + 1];
-                            <div class="article-duo">
-                                <a href="/artykul/@first.Slug" class="article-duo-large">
-                                    <div class="article-duo-large-image">
-                                        <img src="@(first.ImageUrl ?? "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1200")" alt="@first.Title" />
+                            @if (sideArticle != null)
+                            {
+                                <a href="/artykul/@sideArticle.Slug" class="article-side-card">
+                                    <div class="article-side-image">
+                                        <img src="@(sideArticle.ImageUrl ?? "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800")" alt="@sideArticle.Title" />
                                     </div>
-                                    <div class="article-duo-large-content">
-                                        <span class="article-category">@first.Category.Name</span>
-                                        <h3>@first.Title</h3>
-                                        <p>@first.Summary</p>
+                                    <div class="article-side-content">
+                                        <span class="article-category">@sideArticle.Category.Name</span>
+                                        <h3>@sideArticle.Title</h3>
+                                        <p>@sideArticle.Summary</p>
                                         <div class="article-meta">
-                                            <time>@first.PublishedAt.ToString("d MMMM yyyy")</time>
+                                            <time>@sideArticle.PublishedAt.ToString("d MMMM yyyy")</time>
                                         </div>
                                     </div>
                                 </a>
-                                <a href="/artykul/@second.Slug" class="article-duo-small">
-                                    <img src="@(second.ImageUrl ?? "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800")" alt="@second.Title" />
-                                    <div class="article-duo-small-overlay"></div>
-                                    <div class="article-duo-small-content">
-                                        <span class="article-category">@second.Category.Name</span>
-                                        <h3>@second.Title</h3>
-                                        <div class="article-meta">
-                                            <time>@second.PublishedAt.ToString("d MMMM yyyy")</time>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                            index += 2;
-                        }
-                        else
-                        {
-                            var a1 = latestArticles[index];
-                            var a2 = latestArticles[index + 1];
-                            var a3 = latestArticles[index + 2];
-                            <div class="articles-grid">
+                                latestArticles = latestArticles.Skip(1).ToList();
+                            }
+                        </div>
+                    }
+                    
+                    // Reszta artykułów - standardowy grid 3 kolumny
+                    if (latestArticles.Any())
+                    {
+                        <div class="articles-grid">
+                            @foreach (var article in latestArticles)
+                            {
                                 <article class="article-card">
-                                    <a href="/artykul/@a1.Slug" class="article-link">
-                                        @if (!string.IsNullOrEmpty(a1.ImageUrl))
+                                    <a href="/artykul/@article.Slug" class="article-link">
+                                        @if (!string.IsNullOrEmpty(article.ImageUrl))
                                         {
                                             <div class="article-image-wrapper">
-                                                <img src="@a1.ImageUrl" alt="@a1.Title" class="article-image" />
+                                                <img src="@article.ImageUrl" alt="@article.Title" class="article-image" />
                                             </div>
                                         }
                                         <div class="article-content">
-                                            <span class="article-category">@a1.Category.Name</span>
-                                            <h3 class="article-title">@a1.Title</h3>
-                                            <p class="article-summary">@a1.Summary</p>
+                                            <span class="article-category">@article.Category.Name</span>
+                                            <h3 class="article-title">@article.Title</h3>
+                                            <p class="article-summary">@article.Summary</p>
                                             <div class="article-meta">
-                                                <time>@a1.PublishedAt.ToString("d MMMM yyyy")</time>
+                                                <time>@article.PublishedAt.ToString("d MMMM yyyy")</time>
                                             </div>
                                         </div>
                                     </a>
                                 </article>
-                                <article class="article-card">
-                                    <a href="/artykul/@a2.Slug" class="article-link">
-                                        @if (!string.IsNullOrEmpty(a2.ImageUrl))
-                                        {
-                                            <div class="article-image-wrapper">
-                                                <img src="@a2.ImageUrl" alt="@a2.Title" class="article-image" />
-                                            </div>
-                                        }
-                                        <div class="article-content">
-                                            <span class="article-category">@a2.Category.Name</span>
-                                            <h3 class="article-title">@a2.Title</h3>
-                                            <p class="article-summary">@a2.Summary</p>
-                                            <div class="article-meta">
-                                                <time>@a2.PublishedAt.ToString("d MMMM yyyy")</time>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </article>
-                                <article class="article-card">
-                                    <a href="/artykul/@a3.Slug" class="article-link">
-                                        @if (!string.IsNullOrEmpty(a3.ImageUrl))
-                                        {
-                                            <div class="article-image-wrapper">
-                                                <img src="@a3.ImageUrl" alt="@a3.Title" class="article-image" />
-                                            </div>
-                                        }
-                                        <div class="article-content">
-                                            <span class="article-category">@a3.Category.Name</span>
-                                            <h3 class="article-title">@a3.Title</h3>
-                                            <p class="article-summary">@a3.Summary</p>
-                                            <div class="article-meta">
-                                                <time>@a3.PublishedAt.ToString("d MMMM yyyy")</time>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </article>
-                            </div>
-                            index += 3;
-                        }
+                            }
+                        </div>
                     }
                 }
             </section>
