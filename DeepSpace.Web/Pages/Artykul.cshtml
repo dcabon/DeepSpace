@@ -2,11 +2,16 @@
 @model DeepSpace.Web.Pages.ArtykulModel
 @{
     ViewData["Title"] = Model.Article!.Title + " — Deep Space";
+    ViewData["MetaDescription"] = Model.Article.Summary;
+    ViewData["MetaKeywords"] = Model.Tags.Any()
+        ? string.Join(", ", Model.Tags.Select(t => t.Name))
+        : "space, physics, astronomy";
     ViewData["OgTitle"] = Model.Article.Title;
     ViewData["OgDescription"] = Model.Article.Summary;
     ViewData["OgImage"] = Model.Article.ImageUrl;
     
     var articleUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/artykul/{Model.Article.Slug}";
+    ViewData["CanonicalUrl"] = articleUrl;
     var encodedUrl = Uri.EscapeDataString(articleUrl);
     var encodedTitle = Uri.EscapeDataString(Model.Article.Title);
     

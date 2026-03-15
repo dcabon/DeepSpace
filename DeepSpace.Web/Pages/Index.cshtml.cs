@@ -19,6 +19,9 @@ public class IndexModel : PageModel
     public List<Article> LatestArticles { get; set; } = new();
     public List<CategoryWithArticles> CategoriesWithArticles { get; set; } = new();
     public Quiz? FeaturedQuiz { get; set; }
+    public string HomePageH1 { get; set; } = "Deep Space";
+    public string HomePageSubtitle { get; set; } =
+        "Astronomia i fizyka bez clickbaitu. Tylko potwierdzone fakty.";
 
     public class CategoryWithArticles
     {
@@ -28,6 +31,17 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
+        var siteSettings = await _context.SiteSettings
+            .AsNoTracking()
+            .OrderBy(s => s.Id)
+            .FirstOrDefaultAsync();
+
+        if (siteSettings != null)
+        {
+            HomePageH1 = siteSettings.HomePageH1;
+            HomePageSubtitle = siteSettings.HomePageSubtitle;
+        }
+
         // Pobierz wyróżniony quiz
         FeaturedQuiz = await _context.Quizzes
             .Include(q => q.Questions)

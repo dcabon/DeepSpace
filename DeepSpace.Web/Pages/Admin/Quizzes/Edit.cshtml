@@ -1,0 +1,218 @@
+@page "/admin/quizzes/edit/{id:int}"
+@model DeepSpace.Web.Pages.Admin.Quizzes.EditModel
+@{
+    ViewData["Title"] = "Edytuj quiz: " + Model.Quiz!.Title;
+}
+
+<div class="admin-container">
+    <div class="admin-header">
+        <h1>Edytuj quiz</h1>
+        <a href="/admin/quizzes" class="btn btn-secondary">← Powrót</a>
+    </div>
+
+    <!-- Formularz edycji quizu -->
+    <form method="post" asp-page-handler="UpdateQuiz" class="admin-form" style="margin-bottom: 2rem;">
+        <input type="hidden" name="Id" value="@Model.Quiz.Id" />
+        <div class="form-row">
+            <div class="form-group">
+                <label>Tytuł</label>
+                <input type="text" name="Title" value="@Model.Quiz.Title" required />
+            </div>
+            <div class="form-group">
+                <label>Slug</label>
+                <input type="text" name="Slug" value="@Model.Quiz.Slug" required />
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Opis</label>
+            <textarea name="Description" rows="2">@Model.Quiz.Description</textarea>
+        </div>
+        <div class="form-group">
+            <label>URL obrazka</label>
+            <input type="url" name="ImageUrl" value="@Model.Quiz.ImageUrl" />
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="IsPublished" value="true" @(Model.Quiz.IsPublished ? "checked" : "") />
+                Opublikowany
+            </label>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Zapisz zmiany</button>
+            @if (Model.Quiz.IsPublished)
+            {
+                <a href="/quiz/@Model.Quiz.Slug" target="_blank" class="btn btn-secondary">Podgląd →</a>
+            }
+        </div>
+    </form>
+
+    <!-- Sekcja pytań -->
+    <div class="questions-section">
+        <div class="section-header" style="margin-bottom: 1.5rem;">
+            <h2>Pytania (@Model.Quiz.Questions.Count)</h2>
+            <div class="section-line"></div>
+            <button class="btn btn-primary" onclick="openQuestionModal()">+ Dodaj pytanie</button>
+        </div>
+
+        @if (Model.Quiz.Questions.Any())
+        {
+            <div class="questions-list">
+                @foreach (var question in Model.Quiz.Questions.OrderBy(q => q.OrderIndex))
+                {
+                    <div class="question-item">
+                        <div class="question-item-header">
+                            <span class="question-item-number">@(question.OrderIndex + 1)</span>
+                            <h3>@question.QuestionText</h3>
+                            <div class="question-item-actions">
+                                <button class="btn-link" onclick="editQuestion(@question.Id)">Edytuj</button>
+                                <button class="btn-link delete" onclick="deleteQuestion(@question.Id)">Usuń</button>
+                            </div>
+                        </div>
+                        <div class="answers-preview">
+                            @foreach (var answer in question.Answers.OrderBy(a => a.OrderIndex))
+                            {
+                                <span class="answer-preview @(answer.IsCorrect ? "correct" : "")">
+                                    @(answer.IsCorrect ? "✓" : "○") @answer.AnswerText
+                                </span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <p>Brak pytań. Dodaj pierwsze pytanie do quizu.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Modal dodawania/edycji pytania -->
+<div class="modal" id="questionModal">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h2 id="questionModalTitle">Nowe pytanie</h2>
+            <button class="modal-close" onclick="closeQuestionModal()">&times;</button>
+        </div>
+        <form method="post" asp-page-handler="SaveQuestion" class="admin-form" id="questionForm">
+            <input type="hidden" name="QuizId" value="@Model.Quiz.Id" />
+            <input type="hidden" name="QuestionId" id="questionId" value="0" />
+            
+            <div class="form-group">
+                <label>Treść pytania</label>
+                <textarea name="QuestionText" id="questionText" rows="2" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>URL obrazka (opcjonalnie)</label>
+                <input type="url" name="QuestionImageUrl" id="questionImageUrl" />
+            </div>
+            
+            <div class="form-group">
+                <label>Odpowiedzi (zaznacz poprawną)</label>
+                <div class="answers-editor" id="answersEditor">
+                    <div class="answer-row">
+                        <input type="radio" name="CorrectAnswer" value="0" checked />
+                        <input type="text" name="Answers[0]" placeholder="Odpowiedź A" required />
+                    </div>
+                    <div class="answer-row">
+                        <input type="radio" name="CorrectAnswer" value="1" />
+                        <input type="text" name="Answers[1]" placeholder="Odpowiedź B" required />
+                    </div>
+                    <div class="answer-row">
+                        <input type="radio" name="CorrectAnswer" value="2" />
+                        <input type="text" name="Answers[2]" placeholder="Odpowiedź C" required />
+                    </div>
+                    <div class="answer-row">
+                        <input type="radio" name="CorrectAnswer" value="3" />
+                        <input type="text" name="Answers[3]" placeholder="Odpowiedź D" required />
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeQuestionModal()">Anuluj</button>
+                <button type="submit" class="btn btn-primary">Zapisz pytanie</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal usuwania pytania -->
+<div class="modal" id="deleteQuestionModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Usuń pytanie</h2>
+            <button class="modal-close" onclick="closeDeleteQuestionModal()">&times;</button>
+        </div>
+        <form method="post" asp-page-handler="DeleteQuestion" class="admin-form">
+            <input type="hidden" name="QuestionId" id="deleteQuestionId" />
+            <p>Czy na pewno chcesz usunąć to pytanie?</p>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeDeleteQuestionModal()">Anuluj</button>
+                <button type="submit" class="btn btn-danger">Usuń</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const questionsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        Model.Quiz.Questions.Select(q => new {
+            id = q.Id,
+            text = q.QuestionText,
+            imageUrl = q.ImageUrl,
+            answers = q.Answers.OrderBy(a => a.OrderIndex).Select(a => new { text = a.AnswerText, isCorrect = a.IsCorrect })
+        })
+    ));
+
+    function openQuestionModal() {
+        document.getElementById('questionModalTitle').textContent = 'Nowe pytanie';
+        document.getElementById('questionId').value = '0';
+        document.getElementById('questionText').value = '';
+        document.getElementById('questionImageUrl').value = '';
+        
+        // Reset odpowiedzi
+        const inputs = document.querySelectorAll('.answer-row input[type="text"]');
+        inputs.forEach(input => input.value = '');
+        document.querySelector('.answer-row input[type="radio"]').checked = true;
+        
+        document.getElementById('questionModal').classList.add('open');
+    }
+
+    function editQuestion(id) {
+        const question = questionsData.find(q => q.id === id);
+        if (!question) return;
+        
+        document.getElementById('questionModalTitle').textContent = 'Edytuj pytanie';
+        document.getElementById('questionId').value = id;
+        document.getElementById('questionText').value = question.text;
+        document.getElementById('questionImageUrl').value = question.imageUrl || '';
+        
+        // Wypełnij odpowiedzi
+        const inputs = document.querySelectorAll('.answer-row input[type="text"]');
+        const radios = document.querySelectorAll('.answer-row input[type="radio"]');
+        question.answers.forEach((answer, index) => {
+            if (inputs[index]) inputs[index].value = answer.text;
+            if (radios[index] && answer.isCorrect) radios[index].checked = true;
+        });
+        
+        document.getElementById('questionModal').classList.add('open');
+    }
+
+    function closeQuestionModal() {
+        document.getElementById('questionModal').classList.remove('open');
+    }
+
+    function deleteQuestion(id) {
+        document.getElementById('deleteQuestionId').value = id;
+        document.getElementById('deleteQuestionModal').classList.add('open');
+    }
+
+    function closeDeleteQuestionModal() {
+        document.getElementById('deleteQuestionModal').classList.remove('open');
+    }
+</script>
+}

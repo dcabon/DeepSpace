@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
     public DbSet<QuizAnswer> QuizAnswers => Set<QuizAnswer>();
     public DbSet<ArticleSection> ArticleSections => Set<ArticleSection>();
+    public DbSet<SiteSettings> SiteSettings => Set<SiteSettings>();
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -106,6 +107,18 @@ public class AppDbContext : DbContext
                 .WithMany(a => a.Sections)
                 .HasForeignKey(s => s.ArticleId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // SiteSettings
+        modelBuilder.Entity<SiteSettings>(e =>
+        {
+            e.HasKey(s => s.Id);
+            e.Property(s => s.SiteTitle).HasMaxLength(120).IsRequired();
+            e.Property(s => s.SeoDescription).HasMaxLength(320).IsRequired();
+            e.Property(s => s.SeoKeywords).HasMaxLength(320).IsRequired();
+            e.Property(s => s.FaviconPath).HasMaxLength(260);
+            e.Property(s => s.HomePageH1).HasMaxLength(120).IsRequired();
+            e.Property(s => s.HomePageSubtitle).HasMaxLength(220).IsRequired();
         });
     }
 }

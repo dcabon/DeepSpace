@@ -1,0 +1,127 @@
+@page
+@model DeepSpace.Web.Pages.Admin.Quizzes.IndexModel
+@{
+    ViewData["Title"] = "Zarządzanie quizami";
+}
+
+<div class="admin-container">
+    <div class="admin-header">
+        <h1>Quizy</h1>
+        <button class="btn btn-primary" onclick="openCreateModal()">+ Nowy quiz</button>
+    </div>
+
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Tytuł</th>
+                <th>Pytania</th>
+                <th>Status</th>
+                <th>Wyróżniony</th>
+                <th>Data utworzenia</th>
+                <th>Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var quiz in Model.Quizzes)
+            {
+                <tr>
+                    <td>
+                        <strong>@quiz.Title</strong>
+                        <br><small class="text-muted">/quiz/@quiz.Slug</small>
+                    </td>
+                    <td>@quiz.Questions.Count</td>
+                    <td>
+                        <span class="status @(quiz.IsPublished ? "published" : "draft")">
+                            @(quiz.IsPublished ? "Opublikowany" : "Szkic")
+                        </span>
+                    </td>
+                    <td>
+                        <form method="post" asp-page-handler="ToggleFeatured" style="display: inline;">
+                            <input type="hidden" name="Id" value="@quiz.Id" />
+                            <button type="submit" class="featured-toggle @(quiz.IsFeatured ? "active" : "")" title="@(quiz.IsFeatured ? "Usuń z wyróżnionych" : "Wyróżnij na stronie głównej")">
+                                @(quiz.IsFeatured ? "⭐" : "☆")
+                            </button>
+                        </form>
+                    </td>
+                    <td>@quiz.CreatedAt.ToString("dd.MM.yyyy")</td>
+                    <td>
+                        <a href="/admin/quizzes/edit/@quiz.Id" class="btn-link">Edytuj</a>
+                        <button class="btn-link delete" onclick="deleteQuiz(@quiz.Id, '@quiz.Title')">Usuń</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal tworzenia quizu -->
+<div class="modal" id="createModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Nowy quiz</h2>
+            <button class="modal-close" onclick="closeCreateModal()">&times;</button>
+        </div>
+        <form method="post" asp-page-handler="Create" class="admin-form">
+            <div class="form-group">
+                <label>Tytuł</label>
+                <input type="text" name="Title" required />
+            </div>
+            <div class="form-group">
+                <label>Opis (opcjonalnie)</label>
+                <textarea name="Description" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label>URL obrazka (opcjonalnie)</label>
+                <input type="url" name="ImageUrl" />
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="IsPublished" value="true" />
+                    Opublikowany
+                </label>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">Anuluj</button>
+                <button type="submit" class="btn btn-primary">Utwórz quiz</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal usuwania -->
+<div class="modal" id="deleteModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Usuń quiz</h2>
+            <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <form method="post" asp-page-handler="Delete" class="admin-form">
+            <input type="hidden" name="Id" id="deleteId" />
+            <p>Czy na pewno chcesz usunąć quiz "<span id="deleteTitle"></span>"?</p>
+            <p class="text-muted">Ta operacja usunie również wszystkie pytania i odpowiedzi.</p>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Anuluj</button>
+                <button type="submit" class="btn btn-danger">Usuń</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function openCreateModal() {
+        document.getElementById('createModal').classList.add('open');
+    }
+    function closeCreateModal() {
+        document.getElementById('createModal').classList.remove('open');
+    }
+    function deleteQuiz(id, title) {
+        document.getElementById('deleteId').value = id;
+        document.getElementById('deleteTitle').textContent = title;
+        document.getElementById('deleteModal').classList.add('open');
+    }
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.remove('open');
+    }
+</script>
+}

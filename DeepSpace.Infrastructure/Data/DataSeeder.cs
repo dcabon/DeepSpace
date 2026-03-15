@@ -7,28 +7,92 @@ public static class DataSeeder
 {
     public static void Seed(AppDbContext context)
     {
-        if (context.Categories.Any()) return;
+        EnsureCategories(context);
+        EnsureTags(context);
+        EnsureSiteSettings(context);
+        EnsureSampleArticle(context);
+    }
 
+    private static void EnsureCategories(AppDbContext context)
+    {
         var categories = new List<Category>
         {
-            new() { Name = "Astronomia", Slug = "astronomia", Description = "Obserwacje nieba, gwiazdy, galaktyki", },
+            new() { Name = "Astronomia", Slug = "astronomia", Description = "Obserwacje nieba, gwiazdy, galaktyki" },
             new() { Name = "Fizyka", Slug = "fizyka", Description = "Prawa rządzące wszechświatem" },
             new() { Name = "Misje kosmiczne", Slug = "misje-kosmiczne", Description = "Sondy, łaziki, załogowe loty" },
             new() { Name = "Układ Słoneczny", Slug = "uklad-sloneczny", Description = "Planety, księżyce, asteroidy" }
         };
-        context.Categories.AddRange(categories);
-        context.SaveChanges();
 
+        var existingSlugs = context.Categories
+            .Select(c => c.Slug)
+            .ToHashSet();
+
+        var missingCategories = categories
+            .Where(c => !existingSlugs.Contains(c.Slug))
+            .ToList();
+
+        if (missingCategories.Count > 0)
+        {
+            context.Categories.AddRange(missingCategories);
+            context.SaveChanges();
+        }
+    }
+
+    private static void EnsureTags(AppDbContext context)
+    {
         var tags = new List<Tag>
         {
             new() { Name = "NASA", Slug = "nasa" },
             new() { Name = "ESA", Slug = "esa" },
             new() { Name = "James Webb", Slug = "james-webb" },
             new() { Name = "Mars", Slug = "mars" },
-            new() { Name = "Czarne dziury", Slug = "czarne-dziury" }
+            new() { Name = "Czarne dziury", Slug = "czarne-dziury" },
+            new() { Name = "Space", Slug = "space" },
+            new() { Name = "Physics", Slug = "physics" },
+            new() { Name = "Astronomy", Slug = "astronomy" }
         };
-        context.Tags.AddRange(tags);
+
+        var existingSlugs = context.Tags
+            .Select(t => t.Slug)
+            .ToHashSet();
+
+        var missingTags = tags
+            .Where(t => !existingSlugs.Contains(t.Slug))
+            .ToList();
+
+        if (missingTags.Count > 0)
+        {
+            context.Tags.AddRange(missingTags);
+            context.SaveChanges();
+        }
+    }
+
+    private static void EnsureSiteSettings(AppDbContext context)
+    {
+        if (context.SiteSettings.Any())
+        {
+            return;
+        }
+
+        context.SiteSettings.Add(new SiteSettings());
         context.SaveChanges();
+    }
+
+    private static void EnsureSampleArticle(AppDbContext context)
+    {
+        if (context.Articles.Any())
+        {
+            return;
+        }
+
+        var astronomyCategory = context.Categories
+            .AsNoTracking()
+            .FirstOrDefault(c => c.Slug == "astronomia");
+
+        if (astronomyCategory == null)
+        {
+            return;
+        }
 
         var article = new Article
         {
@@ -43,20 +107,30 @@ public static class DataSeeder
             SourceUrl = "https://www.nasa.gov/james-webb-space-telescope",
             SourceName = "NASA",
             ImageUrl = "/images/placeholder.jpg",
-            CategoryId = 1,
+            CategoryId = astronomyCategory.Id,
             PublishedAt = DateTime.UtcNow,
             IsPublished = true,
             IsActive = true
         };
+
         context.Articles.Add(article);
         context.SaveChanges();
 
-        var articleTags = new List<ArticleTag>
+        var articleTagSlugs = new[] { "nasa", "james-webb" };
+        var tags = context.Tags
+            .Where(t => articleTagSlugs.Contains(t.Slug))
+            .ToList();
+
+        if (tags.Count == 0)
         {
-            new() { ArticleId = article.Id, TagId = tags[0].Id },
-            new() { ArticleId = article.Id, TagId = tags[2].Id }
-        };
-        context.ArticleTags.AddRange(articleTags);
+            return;
+        }
+
+        context.ArticleTags.AddRange(tags.Select(tag => new ArticleTag
+        {
+            ArticleId = article.Id,
+            TagId = tag.Id
+        }));
         context.SaveChanges();
     }
 }

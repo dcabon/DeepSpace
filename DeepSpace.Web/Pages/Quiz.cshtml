@@ -1,0 +1,236 @@
+@page "/quiz/{slug}"
+@model DeepSpace.Web.Pages.QuizModel
+@{
+    ViewData["Title"] = Model.Quiz!.Title + " — Deep Space";
+    ViewData["MetaDescription"] = Model.Quiz.Description ?? "Quiz astronomiczny na Deep Space.";
+    ViewData["MetaKeywords"] = "quiz, astronomy, space, physics";
+}
+
+<div class="quiz-hero">
+    <div class="quiz-hero-image">
+        <img src="@(Model.Quiz.ImageUrl ?? "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1200")" alt="@Model.Quiz.Title" />
+        <div class="quiz-hero-overlay"></div>
+    </div>
+    <div class="quiz-hero-content">
+        <h1>@Model.Quiz.Title</h1>
+        @if (!string.IsNullOrEmpty(Model.Quiz.Description))
+        {
+            <p>@Model.Quiz.Description</p>
+        }
+        <div class="quiz-info">
+            <span>@Model.Quiz.Questions.Count pytań</span>
+        </div>
+    </div>
+</div>
+
+<div class="quiz-container">
+    <div class="quiz-progress">
+        <div class="quiz-progress-bar" id="progressBar"></div>
+    </div>
+    
+    <form id="quizForm">
+        @for (int i = 0; i < Model.Quiz.Questions.Count; i++)
+        {
+            var question = Model.Quiz.Questions.ElementAt(i);
+            <div class="quiz-question" data-question="@i" data-correct="@question.Answers.First(a => a.IsCorrect).Id" style="display: @(i == 0 ? "block" : "none")">
+                <div class="question-header">
+                    <span class="question-number">Pytanie @(i + 1) z @Model.Quiz.Questions.Count</span>
+                </div>
+                <h2 class="question-text">@question.QuestionText</h2>
+                
+                @if (!string.IsNullOrEmpty(question.ImageUrl))
+                {
+                    <div class="question-image">
+                        <img src="@question.ImageUrl" alt="Pytanie @(i + 1)" />
+                    </div>
+                }
+                
+                <div class="answers-list">
+                    @foreach (var answer in question.Answers.OrderBy(a => a.OrderIndex))
+                    {
+                        <label class="answer-option" data-answer="@answer.Id" data-correct="@answer.IsCorrect.ToString().ToLower()">
+                            <input type="radio" name="question_@question.Id" value="@answer.Id" />
+                            <span class="answer-text">@answer.AnswerText</span>
+                            <span class="answer-icon"></span>
+                        </label>
+                    }
+                </div>
+                
+                <div class="question-actions">
+                    @if (i > 0)
+                    {
+                        <button type="button" class="btn btn-secondary prev-btn" onclick="prevQuestion()">← Poprzednie</button>
+                    }
+                    @if (i < Model.Quiz.Questions.Count - 1)
+                    {
+                        <button type="button" class="btn btn-primary next-btn" onclick="nextQuestion()" disabled>Następne →</button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-primary finish-btn" onclick="finishQuiz()" disabled>Zakończ quiz</button>
+                    }
+                </div>
+            </div>
+        }
+    </form>
+</div>
+
+<!-- Modal z wynikami -->
+<div class="quiz-modal" id="resultsModal">
+    <div class="quiz-modal-content">
+        <div class="quiz-modal-header">
+            <h2>Twój wynik</h2>
+        </div>
+        <div class="quiz-modal-body">
+            <div class="quiz-result-circle">
+                <span class="result-score" id="resultScore">0</span>
+                <span class="result-total">/ @Model.Quiz.Questions.Count</span>
+            </div>
+            <p class="result-message" id="resultMessage"></p>
+            <div class="result-details" id="resultDetails"></div>
+        </div>
+        <div class="quiz-modal-footer">
+            <a href="/quizy" class="btn btn-secondary">Więcej quizów</a>
+            <button type="button" class="btn btn-primary" onclick="restartQuiz()">Spróbuj ponownie</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let currentQuestion = 0;
+    const totalQuestions = @Model.Quiz.Questions.Count;
+    let userAnswers = {};
+    let correctAnswers = 0;
+
+    // Aktualizuj progress bar
+    function updateProgress() {
+        const progress = ((currentQuestion + 1) / totalQuestions) * 100;
+        document.getElementById('progressBar').style.width = progress + '%';
+    }
+
+    // Pokaż pytanie
+    function showQuestion(index) {
+        document.querySelectorAll('.quiz-question').forEach((q, i) => {
+            q.style.display = i === index ? 'block' : 'none';
+        });
+        currentQuestion = index;
+        updateProgress();
+    }
+
+    // Następne pytanie
+    function nextQuestion() {
+        if (currentQuestion < totalQuestions - 1) {
+            showQuestion(currentQuestion + 1);
+        }
+    }
+
+    // Poprzednie pytanie
+    function prevQuestion() {
+        if (currentQuestion > 0) {
+            showQuestion(currentQuestion - 1);
+        }
+    }
+
+    // Obsługa wyboru odpowiedzi
+    document.querySelectorAll('.answer-option input').forEach(input => {
+        input.addEventListener('change', function() {
+            const questionDiv = this.closest('.quiz-question');
+            const questionIndex = parseInt(questionDiv.dataset.question);
+            const correctId = questionDiv.dataset.correct;
+            const selectedId = this.value;
+            
+            // Zapisz odpowiedź
+            userAnswers[questionIndex] = {
+                selected: selectedId,
+                correct: correctId,
+                isCorrect: selectedId === correctId
+            };
+            
+            // Pokaż feedback
+            questionDiv.querySelectorAll('.answer-option').forEach(opt => {
+                opt.classList.remove('selected', 'correct', 'incorrect');
+                if (opt.dataset.answer === selectedId) {
+                    opt.classList.add('selected');
+                    if (opt.dataset.correct === 'true') {
+                        opt.classList.add('correct');
+                    } else {
+                        opt.classList.add('incorrect');
+                        // Pokaż poprawną odpowiedź
+                        questionDiv.querySelector(`.answer-option[data-correct="true"]`).classList.add('correct');
+                    }
+                }
+            });
+            
+            // Zablokuj odpowiedzi
+            questionDiv.querySelectorAll('.answer-option input').forEach(i => i.disabled = true);
+            
+            // Odblokuj przycisk następny/zakończ
+            const nextBtn = questionDiv.querySelector('.next-btn, .finish-btn');
+            if (nextBtn) nextBtn.disabled = false;
+        });
+    });
+
+    // Zakończ quiz
+    function finishQuiz() {
+        correctAnswers = Object.values(userAnswers).filter(a => a.isCorrect).length;
+        const percentage = (correctAnswers / totalQuestions) * 100;
+        
+        document.getElementById('resultScore').textContent = correctAnswers;
+        
+        let message = '';
+        if (percentage === 100) {
+            message = '🎉 Doskonale! Jesteś ekspertem!';
+        } else if (percentage >= 80) {
+            message = '👏 Świetny wynik! Znasz się na astronomii!';
+        } else if (percentage >= 60) {
+            message = '👍 Dobry wynik! Jest jeszcze miejsce na poprawę.';
+        } else if (percentage >= 40) {
+            message = '🤔 Niezły początek. Spróbuj jeszcze raz!';
+        } else {
+            message = '📚 Warto poczytać więcej o kosmosie!';
+        }
+        document.getElementById('resultMessage').textContent = message;
+        
+        // Pokaż szczegóły
+        let details = '<h4>Podsumowanie:</h4><ul>';
+        for (let i = 0; i < totalQuestions; i++) {
+            const answer = userAnswers[i];
+            const icon = answer && answer.isCorrect ? '✓' : '✗';
+            const cls = answer && answer.isCorrect ? 'correct' : 'incorrect';
+            details += `<li class="${cls}"><span>${icon}</span> Pytanie ${i + 1}</li>`;
+        }
+        details += '</ul>';
+        document.getElementById('resultDetails').innerHTML = details;
+        
+        // Pokaż modal
+        document.getElementById('resultsModal').classList.add('open');
+    }
+
+    // Restart quizu
+    function restartQuiz() {
+        userAnswers = {};
+        correctAnswers = 0;
+        
+        // Reset wszystkich pytań
+        document.querySelectorAll('.quiz-question').forEach((q, i) => {
+            q.querySelectorAll('.answer-option').forEach(opt => {
+                opt.classList.remove('selected', 'correct', 'incorrect');
+            });
+            q.querySelectorAll('input').forEach(input => {
+                input.disabled = false;
+                input.checked = false;
+            });
+            const btn = q.querySelector('.next-btn, .finish-btn');
+            if (btn) btn.disabled = true;
+        });
+        
+        // Zamknij modal i wróć do pytania 1
+        document.getElementById('resultsModal').classList.remove('open');
+        showQuestion(0);
+    }
+
+    // Inicjalizacja
+    updateProgress();
+</script>
+}

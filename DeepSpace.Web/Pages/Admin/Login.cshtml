@@ -1,8 +1,15 @@
 @page "/admin/login"
 @model DeepSpace.Web.Pages.Admin.LoginModel
+@using DeepSpace.Infrastructure.Data
+@inject AppDbContext DbContext
 @{
     ViewData["Title"] = "Logowanie";
     Layout = null;
+    var faviconPath = DbContext.SiteSettings
+        .OrderBy(s => s.Id)
+        .Select(s => s.FaviconPath)
+        .FirstOrDefault();
+    faviconPath = string.IsNullOrWhiteSpace(faviconPath) ? "/favicon.ico" : faviconPath;
 }
 
 <!DOCTYPE html>
@@ -10,7 +17,9 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
     <title>Logowanie — Deep Space</title>
+    <link rel="icon" href="@faviconPath" />
     <link rel="stylesheet" href="~/css/site.css" />
 </head>
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">

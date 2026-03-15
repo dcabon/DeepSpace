@@ -2,6 +2,8 @@
 @model DeepSpace.Web.Pages.KategoriaModel
 @{
     ViewData["Title"] = Model.Category!.Name + " — Deep Space";
+    ViewData["MetaDescription"] = $"Artykuły w kategorii {Model.Category.Name} na Deep Space.";
+    ViewData["MetaKeywords"] = $"{Model.Category.Name}, space, physics, astronomy";
 }
 
 <div class="page-header">

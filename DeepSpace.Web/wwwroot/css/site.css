@@ -2812,6 +2812,13 @@ main{
     border-color: var(--accent);
 }
 
+.text-danger {
+    display: block;
+    margin-top: 0.45rem;
+    font-size: 0.8rem;
+    color: #b91c1c;
+}
+
 .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;

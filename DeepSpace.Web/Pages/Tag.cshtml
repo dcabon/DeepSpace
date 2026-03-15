@@ -2,6 +2,8 @@
 @model DeepSpace.Web.Pages.TagModel
 @{
     ViewData["Title"] = "#" + Model.Tag!.Name + " — Deep Space";
+    ViewData["MetaDescription"] = $"Artykuły oznaczone tagiem {Model.Tag.Name}.";
+    ViewData["MetaKeywords"] = $"{Model.Tag.Name}, space, physics, astronomy";
 }
 
 <div class="page-header">

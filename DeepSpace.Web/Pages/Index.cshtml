@@ -3,12 +3,15 @@
 @model DeepSpace.Web.Pages.IndexModel
 @{
     ViewData["Title"] = "Deep Space — Astronomia i fizyka bez clickbaitu";
+    ViewData["MetaDescription"] = "Aktualności z astronomii i fizyki: kosmos, misje, teleskopy, ISS i quizy naukowe.";
+    ViewData["MetaKeywords"] = "space, physics, astronomy, kosmos, astronomia, fizyka";
+    ViewData["OgDescription"] = ViewData["MetaDescription"];
 }
 
 <div class="masthead">
     <div class="masthead-content">
-        <h1 class="masthead-title">Deep Space</h1>
-        <p class="masthead-tagline">Astronomia i fizyka bez clickbaitu. Tylko potwierdzone fakty.</p>
+        <h1 class="masthead-title">@Model.HomePageH1</h1>
+        <p class="masthead-tagline">@Model.HomePageSubtitle</p>
         <div class="masthead-date">@DateTime.Now.ToString("dddd, d MMMM yyyy")</div>
     </div>
 </div>
@@ -84,7 +87,7 @@ async function refreshIssData() {
 
 async function loadAstronauts() {
     try {
-        const response = await fetch('http://api.open-notify.org/astros.json');
+        const response = await fetch('https://api.open-notify.org/astros.json');
         const data = await response.json();
         
         const issAstronauts = data.people.filter(p => p.craft === 'ISS');

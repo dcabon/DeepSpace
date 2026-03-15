@@ -1,0 +1,44 @@
+@page
+@model DeepSpace.Web.Pages.QuizyModel
+@{
+    ViewData["Title"] = "Quizy — Deep Space";
+    ViewData["MetaDescription"] = "Quizy astronomiczne i fizyczne Deep Space.";
+    ViewData["MetaKeywords"] = "quiz, astronomy, physics, space";
+}
+
+<div class="page-header">
+    <h1>Quizy astronomiczne</h1>
+    <p>Sprawdź swoją wiedzę o kosmosie</p>
+</div>
+
+<div class="editorial-container">
+    @if (Model.Quizzes.Any())
+    {
+        <div class="quizzes-grid">
+            @foreach (var quiz in Model.Quizzes)
+            {
+                <a href="/quiz/@quiz.Slug" class="quiz-card">
+                    <div class="quiz-card-image">
+                        <img src="@(quiz.ImageUrl ?? "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800")" alt="@quiz.Title" />
+                        <div class="quiz-card-overlay"></div>
+                        <div class="quiz-card-badge">@quiz.Questions.Count pytań</div>
+                    </div>
+                    <div class="quiz-card-content">
+                        <h3>@quiz.Title</h3>
+                        @if (!string.IsNullOrEmpty(quiz.Description))
+                        {
+                            <p>@quiz.Description</p>
+                        }
+                        <span class="quiz-card-cta">Rozpocznij quiz →</span>
+                    </div>
+                </a>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>Brak dostępnych quizów</p>
+        </div>
+    }
+</div>
