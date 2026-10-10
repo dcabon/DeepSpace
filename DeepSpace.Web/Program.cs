@@ -1,7 +1,9 @@
 using DeepSpace.Infrastructure.Data;
+using DeepSpace.Web.Services;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
+using System.Threading.RateLimiting;
 using System.Xml.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,8 +14,34 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AllowAnonymousToPage("/Admin/Login");
 });
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuditActorProvider, HttpAuditActorProvider>();
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Ochrona przed zgadywaniem hasła: limit prób logowania na adres IP.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    {
+        var isLoginAttempt = HttpMethods.IsPost(context.Request.Method) &&
+                             context.Request.Path.StartsWithSegments("/admin/login");
+        if (!isLoginAttempt)
+        {
+            return RateLimitPartition.GetNoLimiter("none");
+        }
+
+        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(5),
+            QueueLimit = 0
+        });
+    });
+});
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -93,15 +121,18 @@ app.Use(async (context, next) =>
     context.Response.Headers["X-Permitted-Cross-Domain-Policies"] = "none";
     context.Response.Headers["Content-Security-Policy"] =
         "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; " +
-        "img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://cdn.quilljs.com https://fonts.googleapis.com; " +
-        "font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdn.quilljs.com; " +
-        "connect-src 'self' https://api.wheretheiss.at https://api.open-notify.org https:; " +
+        "img-src 'self' data: https: https://www.google-analytics.com https://www.googletagmanager.com; " +
+        "style-src 'self' 'unsafe-inline' https://cdn.quilljs.com https://fonts.googleapis.com; " +
+        "font-src 'self' data: https://fonts.gstatic.com; " +
+        "script-src 'self' 'unsafe-inline' https://cdn.quilljs.com https://www.googletagmanager.com https://www.google-analytics.com; " +
+        "connect-src 'self' https://api.wheretheiss.at https://api.open-notify.org https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https:; " +
         "upgrade-insecure-requests; block-all-mixed-content";
 
     await next();
 });
 app.UseStaticFiles();
 app.UseRouting();
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -191,3 +222,5 @@ app.MapGet("/sitemap.xml", async (HttpContext context, AppDbContext dbContext) =
 app.MapRazorPages();
 
 app.Run();
+
+public partial class Program;

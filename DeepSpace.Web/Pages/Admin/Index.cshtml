@@ -7,7 +7,9 @@
 <div class="admin-container">
     <div class="admin-header">
         <h1>Panel administracyjny</h1>
-        <a href="/admin/logout" class="btn btn-secondary">Wyloguj</a>
+        <form method="post" asp-page="/Admin/Logout">
+            <button type="submit" class="btn btn-secondary">Wyloguj</button>
+        </form>
     </div>
 
     <div class="admin-menu">
@@ -39,6 +41,12 @@
             <div class="admin-card-icon">⚙️</div>
             <h2>Ustawienia SEO</h2>
             <p>Edytuj favicon, H1, undertitle i meta SEO</p>
+        </a>
+
+        <a href="/admin/audit" class="admin-card">
+            <div class="admin-card-icon">🧾</div>
+            <h2>Historia zmian</h2>
+            <p>Kto, co i kiedy zmienił w bazie danych</p>
         </a>
 
         <a href="/" target="_blank" class="admin-card">

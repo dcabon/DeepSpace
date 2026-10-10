@@ -1,8 +1,242 @@
-﻿@page
+@page
 @model PrivacyModel
 @{
-    ViewData["Title"] = "Privacy Policy";
+    ViewData["Title"] = "Polityka Prywatności";
+    ViewData["MetaDescription"] = "Polityka prywatności serwisu Deep Space. Informacje o przetwarzaniu danych osobowych i wykorzystaniu plików cookies.";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="privacy-page">
+    <div class="page-header">
+        <h1>Polityka Prywatności</h1>
+        <p>Ostatnia aktualizacja: @DateTime.Now.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("pl-PL"))</p>
+    </div>
+
+    <div class="privacy-content">
+        <section class="privacy-section">
+            <h2>1. Informacje ogólne</h2>
+            <p>
+                Niniejsza Polityka Prywatności określa zasady przetwarzania i ochrony danych osobowych
+                przekazanych przez Użytkowników w związku z korzystaniem z serwisu Deep Space.
+            </p>
+            <p>
+                Administratorem danych osobowych jest właściciel serwisu Deep Space.
+                Dokładamy wszelkich starań, aby chronić prywatność osób odwiedzających nasz serwis.
+            </p>
+        </section>
+
+        <section class="privacy-section">
+            <h2>2. Zbierane dane</h2>
+            <p>
+                Serwis Deep Space wykorzystuje <strong>Google Analytics</strong> — usługę analityki internetowej
+                dostarczaną przez Google LLC — w celu analizy sposobu korzystania z serwisu przez użytkowników.
+            </p>
+            <p>Google Analytics zbiera następujące informacje:</p>
+            <ul>
+                <li>Anonimowe dane o ruchu na stronie (liczba odwiedzin, czas spędzony na stronie)</li>
+                <li>Przybliżona lokalizacja geograficzna (na poziomie kraju/miasta)</li>
+                <li>Typ urządzenia, przeglądarka i system operacyjny</li>
+                <li>Źródło ruchu (skąd użytkownik trafił na stronę)</li>
+                <li>Przeglądane podstrony i ścieżki nawigacji</li>
+            </ul>
+            <p>
+                <strong>Nie zbieramy</strong> danych osobowych umożliwiających bezpośrednią identyfikację użytkownika,
+                takich jak imię, nazwisko, adres e-mail czy numer telefonu, chyba że użytkownik sam je poda
+                (np. poprzez formularz kontaktowy).
+            </p>
+        </section>
+
+        <section class="privacy-section">
+            <h2>3. Pliki cookies</h2>
+            <p>
+                Serwis wykorzystuje pliki cookies (ciasteczka) — niewielkie pliki tekstowe przechowywane
+                na urządzeniu użytkownika. Stosujemy następujące rodzaje cookies:
+            </p>
+
+            <h3>3.1. Cookies niezbędne</h3>
+            <p>
+                Są to pliki cookies konieczne do prawidłowego funkcjonowania serwisu (np. sesja użytkownika,
+                zabezpieczenia formularzy). Te cookies nie wymagają zgody użytkownika.
+            </p>
+
+            <h3>3.2. Cookies analityczne (Google Analytics)</h3>
+            <p>
+                Pliki cookies Google Analytics są wykorzystywane wyłącznie do celów statystycznych i pomagają nam
+                zrozumieć, w jaki sposób użytkownicy korzystają z serwisu. Obejmują one:
+            </p>
+            <ul>
+                <li><code>_ga</code> — identyfikator użytkownika (ważność: 2 lata)</li>
+                <li><code>_ga_*</code> — identyfikator sesji (ważność: 2 lata)</li>
+            </ul>
+            <p>
+                <strong>Cookies analityczne są włączane dopiero po wyrażeniu zgody przez użytkownika</strong>
+                poprzez baner cookie consent wyświetlany przy pierwszej wizycie.
+            </p>
+        </section>
+
+        <section class="privacy-section">
+            <h2>4. Podstawa prawna przetwarzania</h2>
+            <p>Dane są przetwarzane na podstawie:</p>
+            <ul>
+                <li>
+                    <strong>Art. 6 ust. 1 lit. a RODO</strong> — zgoda użytkownika (w przypadku cookies analitycznych)
+                </li>
+                <li>
+                    <strong>Art. 6 ust. 1 lit. f RODO</strong> — prawnie uzasadniony interes administratora
+                    (analiza ruchu w celu ulepszania serwisu)
+                </li>
+            </ul>
+        </section>
+
+        <section class="privacy-section">
+            <h2>5. Przekazywanie danych</h2>
+            <p>
+                Dane zbierane przez Google Analytics są przekazywane do Google LLC z siedzibą w USA.
+                Google zapewnia odpowiedni poziom ochrony danych zgodnie z decyzją Komisji Europejskiej
+                w sprawie odpowiedniości ochrony danych (EU-US Data Privacy Framework).
+            </p>
+            <p>
+                Więcej informacji o przetwarzaniu danych przez Google można znaleźć w
+                <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">
+                    Polityce Prywatności Google
+                </a>.
+            </p>
+        </section>
+
+        <section class="privacy-section">
+            <h2>6. Prawa użytkownika</h2>
+            <p>Zgodnie z RODO, użytkownik ma prawo do:</p>
+            <ul>
+                <li>Dostępu do swoich danych osobowych</li>
+                <li>Sprostowania nieprawidłowych danych</li>
+                <li>Usunięcia danych („prawo do bycia zapomnianym")</li>
+                <li>Ograniczenia przetwarzania</li>
+                <li>Przenoszenia danych</li>
+                <li>Wniesienia sprzeciwu wobec przetwarzania</li>
+                <li>Cofnięcia zgody w dowolnym momencie</li>
+            </ul>
+        </section>
+
+        <section class="privacy-section">
+            <h2>7. Zarządzanie cookies</h2>
+            <p>
+                Użytkownik może w każdej chwili zmienić ustawienia dotyczące cookies poprzez:
+            </p>
+            <ul>
+                <li>
+                    <strong>Baner cookie consent</strong> — kliknięcie przycisku ustawień cookies
+                    w stopce strony pozwala zmienić preferencje
+                </li>
+                <li>
+                    <strong>Ustawienia przeglądarki</strong> — większość przeglądarek pozwala na
+                    blokowanie lub usuwanie plików cookies
+                </li>
+            </ul>
+            <p>
+                Aby zrezygnować ze śledzenia przez Google Analytics na wszystkich stronach,
+                można zainstalować
+                <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer">
+                    dodatek do przeglądarki blokujący Google Analytics
+                </a>.
+            </p>
+        </section>
+
+        <section class="privacy-section">
+            <h2>8. Bezpieczeństwo danych</h2>
+            <p>
+                Stosujemy odpowiednie środki techniczne i organizacyjne w celu ochrony danych przed
+                nieuprawnionym dostępem, utratą lub zniszczeniem, w tym:
+            </p>
+            <ul>
+                <li>Szyfrowanie połączenia (HTTPS/TLS)</li>
+                <li>Regularne aktualizacje oprogramowania</li>
+                <li>Ograniczony dostęp do danych</li>
+            </ul>
+        </section>
+
+        <section class="privacy-section">
+            <h2>9. Zmiany w polityce prywatności</h2>
+            <p>
+                Zastrzegamy sobie prawo do wprowadzania zmian w niniejszej Polityce Prywatności.
+                O wszelkich istotnych zmianach użytkownicy zostaną poinformowani poprzez stosowny
+                komunikat na stronie. Zalecamy regularne sprawdzanie tej strony.
+            </p>
+        </section>
+
+        <section class="privacy-section">
+            <h2>10. Kontakt</h2>
+            <p>
+                W przypadku pytań dotyczących niniejszej Polityki Prywatności lub przetwarzania danych osobowych,
+                prosimy o kontakt za pośrednictwem formularza kontaktowego dostępnego na stronie.
+            </p>
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+<style>
+    .privacy-page {
+        max-width: 800px;
+        margin: 0 auto;
+        padding-bottom: 3rem;
+    }
+
+    .privacy-content {
+        padding: 0 2rem;
+    }
+
+    .privacy-section {
+        margin-bottom: 2.5rem;
+    }
+
+    .privacy-section h2 {
+        font-family: var(--font-display);
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .privacy-section h3 {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 1.5rem 0 0.75rem;
+    }
+
+    .privacy-section p {
+        font-size: 1rem;
+        line-height: 1.8;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+    }
+
+    .privacy-section ul {
+        margin: 1rem 0 1.5rem 1.5rem;
+        line-height: 1.8;
+        color: var(--text-secondary);
+    }
+
+    .privacy-section li {
+        margin-bottom: 0.5rem;
+    }
+
+    .privacy-section a {
+        color: var(--accent);
+        text-decoration: underline;
+    }
+
+    .privacy-section a:hover {
+        color: var(--accent-hover);
+    }
+
+    .privacy-section code {
+        background: var(--bg-secondary);
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+</style>
+}

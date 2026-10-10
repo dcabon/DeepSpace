@@ -1,0 +1,71 @@
+@page "/admin/audit"
+@model DeepSpace.Web.Pages.Admin.AuditModel
+@{
+    ViewData["Title"] = "Historia zmian";
+}
+
+<div class="admin-container">
+    <div class="admin-header">
+        <h1>Historia zmian</h1>
+        <a href="/admin" class="btn btn-secondary">← Powrót</a>
+    </div>
+
+    <table class="admin-table">
+        <thead>
+        <tr>
+            <th>Kiedy (UTC)</th>
+            <th>Kto</th>
+            <th>Akcja</th>
+            <th>Gdzie</th>
+            <th>Zmiany</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var auditEvent in Model.Events)
+        {
+            <tr>
+                <td>@auditEvent.OccurredAt.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                <td>@auditEvent.AdminLogin</td>
+                <td>@auditEvent.Action</td>
+                <td>
+                    @auditEvent.EntityType@(string.IsNullOrEmpty(auditEvent.EntityId) ? "" : $" #{auditEvent.EntityId}")
+                    <br />
+                    <small class="text-muted">@auditEvent.RequestPath</small>
+                </td>
+                <td>
+                    <ul class="audit-changes">
+                        @foreach (var change in auditEvent.Changes.OrderBy(c => c.Id))
+                        {
+                            <li>
+                                <strong>@change.PropertyName:</strong>
+                                @if (auditEvent.Action == AdminAuditActions.Updated)
+                                {
+                                    <span class="audit-old">@AuditModel.DisplayValue(change.OldValue)</span>
+                                    <span>→</span>
+                                }
+                                <span>@AuditModel.DisplayValue(auditEvent.Action == AdminAuditActions.Deleted ? change.OldValue : change.NewValue)</span>
+                            </li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+
+    @if (Model.Events.Count == 0)
+    {
+        <p class="text-muted">Brak zapisanych zdarzeń.</p>
+    }
+
+    <div class="form-actions">
+        @if (Model.CurrentPage > 1)
+        {
+            <a href="/admin/audit?p=@(Model.CurrentPage - 1)" class="btn btn-secondary">← Nowsze</a>
+        }
+        @if (Model.HasNextPage)
+        {
+            <a href="/admin/audit?p=@(Model.CurrentPage + 1)" class="btn btn-secondary">Starsze →</a>
+        }
+    </div>
+</div>

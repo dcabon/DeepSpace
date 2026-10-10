@@ -95,7 +95,11 @@ async function loadAstronauts() {
         if (issAstronauts.length > 0) {
             document.getElementById('issCrewCount').textContent = issAstronauts.length;
             const list = document.getElementById('issCrewList');
-            list.innerHTML = issAstronauts.map(a => `<li>${a.name}</li>`).join('');
+            list.replaceChildren(...issAstronauts.map(a => {
+                const item = document.createElement('li');
+                item.textContent = a.name;
+                return item;
+            }));
             document.getElementById('issCrew').style.display = 'block';
         }
     } catch (error) {
